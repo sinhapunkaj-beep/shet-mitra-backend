@@ -29,28 +29,27 @@ def run_pipeline():
         "farmer_message": message
     }
 
-@app.get("/report", response_class=HTMLResponse)
-def get_report(request: Request):
-    data = get_mock_data()
-    weather = get_weather()
-    advisory = generate_advisory(data, weather)
-
-    grid = [
-        ["green", "green", "green", "lightgreen"],
-        ["green", "orange", "yellow", "green"],
-        ["lightgreen", "red", "orange", "green"],
-        ["green", "yellow", "lightgreen", "green"]
-    ]
-
-    return templates.TemplateResponse("report.html", {
-        "request": request,
-        "field_id": data["field_id"],
-        "date": data["date"],
-        "health": "Good",
-        "water": "Check",
-        "advisory": advisory["alerts"] or ["No major alerts"],
-        "rain": weather["daily"]["precipitation_sum"],
-        "grid": grid
-    })
-
+# @app.get("/report", response_class=HTMLResponse)
+# def get_report(request: Request):
+#     data = get_mock_data()
+#     weather = get_weather()
+#     advisory = generate_advisory(data, weather)
+#
+#     grid = [
+#         ["green", "green", "green", "lightgreen"],
+#         ["green", "orange", "yellow", "green"],
+#         ["lightgreen", "red", "orange", "green"],
+#         ["green", "yellow", "lightgreen", "green"]
+#     ]
+#
+#     return templates.TemplateResponse("report.html", {
+#         "request": request,
+#         "field_id": data["field_id"],
+#         "date": data["date"],
+#         "health": "Good",
+#         "water": "Check",
+#         "advisory": advisory["alerts"] or ["No major alerts"],
+#         "rain": weather["daily"]["precipitation_sum"],
+#         "grid": grid
+#     })
 x = 1
