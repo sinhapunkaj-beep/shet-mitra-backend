@@ -52,3 +52,5 @@ def get_report(request: Request):
         "rain": weather["daily"]["precipitation_sum"],
         "grid": grid
     })
+
+x = 1
