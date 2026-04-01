@@ -11,17 +11,14 @@ def generate_farmer_message(data, weather, advisory):
     else:
         health = "Poor"
 
-    message = f"""
-🌾 Shet Mitra Advisory
-
-📍 Field: {data['field_id']}
-🌱 Crop: {data['crop']}
-
-🟢 Health: {health} (NDVI: {ndvi})
-🌧️ Rain: {rain} mm expected
-
-⚠️ Advisory:
-"""
+    message = (
+        f"🌾 Shet Mitra Advisory\n\n"
+        f"📍 Field: {data['field_id']}\n"
+        f"🌱 Crop: {data['crop']}\n\n"
+        f"🟢 Health: {health} (NDVI: {ndvi})\n"
+        f"🌧️ Rain: {rain} mm expected\n\n"
+        f"⚠️ Advisory:\n"
+    )
 
     if advisory["alerts"]:
         for alert in advisory["alerts"]:
