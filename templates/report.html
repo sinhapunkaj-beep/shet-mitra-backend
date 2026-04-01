@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Shet Mitra Report</title>
+    <style>
+        body {
+            font-family: Arial;
+            background: #f4f4f4;
+        }
+        .container {
+            width: 400px;
+            margin: auto;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .header {
+            background: #1b5e20;
+            color: white;
+            padding: 15px;
+        }
+        .section {
+            padding: 15px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 3px;
+        }
+        .box {
+            height: 60px;
+        }
+        .green { background: #4caf50; }
+        .lightgreen { background: #81c784; }
+        .yellow { background: #fff176; }
+        .orange { background: #ffb74d; }
+        .red { background: #e57373; }
+
+        .card {
+            background: #eee;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 8px;
+        }
+
+        .advisory {
+            background: #fff3e0;
+            padding: 10px;
+            margin-top: 10px;
+        }
+
+        .weather {
+            background: #e3f2fd;
+            padding: 10px;
+            margin-top: 10px;
+        }
+
+        .danger {
+            background: #ffebee;
+            padding: 10px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <div class="header">
+        <h3>Sahyadri Krushi</h3>
+        <p>Satellite + Weather | Farm report</p>
+        <p>Field: {{field_id}} | {{date}}</p>
+    </div>
+
+    <div class="section">
+        <h4>Crop health map</h4>
+
+        <div class="grid">
+            {% for row in grid %}
+                {% for cell in row %}
+                    <div class="box {{cell}}"></div>
+                {% endfor %}
+            {% endfor %}
+        </div>
+
+        <div class="card">
+            <b>Leaf health:</b> {{health}} <br>
+            <b>Water condition:</b> {{water}}
+        </div>
+
+        <div class="advisory">
+            <h4>What to do</h4>
+            <ul>
+                {% for item in advisory %}
+                <li>{{item}}</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="weather">
+            <h4>5-day weather</h4>
+            <p>Rain: {{rain}}</p>
+        </div>
+
+        <div class="danger">
+            <h4>Weather advice</h4>
+            <p>Avoid spraying during rain days</p>
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>
