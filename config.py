@@ -1,0 +1,4 @@
+LAT = 18.5204
+LON = 73.8567
+FIELD_ID = "FIELD_001"
+CROP = "pomegranate"
