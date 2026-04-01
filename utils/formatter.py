@@ -2,7 +2,14 @@ def generate_farmer_message(data, weather, advisory):
     ndvi = data["metrics"]["ndvi_avg"]
     rain = weather["daily"]["precipitation_sum"][0]
 
-    health = "Good" if ndvi and ndvi > 0.65 else "Moderate" if ndvi > 0.5 else "Poor"
+    if ndvi is None:
+        health = "Unknown"
+    elif ndvi > 0.65:
+        health = "Good"
+    elif ndvi > 0.5:
+        health = "Moderate"
+    else:
+        health = "Poor"
 
     message = f"""
 🌾 Shet Mitra Advisory
@@ -16,8 +23,11 @@ def generate_farmer_message(data, weather, advisory):
 ⚠️ Advisory:
 """
 
-    for alert in advisory["alerts"]:
-        message += f"• {alert}\n"
+    if advisory["alerts"]:
+        for alert in advisory["alerts"]:
+            message += f"• {alert}\n"
+    else:
+        message += "• No major alerts\n"
 
     message += "\n📅 Stay updated with Shet Mitra"
 
