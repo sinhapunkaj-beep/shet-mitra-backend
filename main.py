@@ -34,7 +34,6 @@ def report_ui():
                 overflow: hidden;
             }
 
-            /* HEADER */
             .header {
                 background: #1b5e20;
                 color: white;
@@ -65,7 +64,6 @@ def report_ui():
             .title { font-size: 16px; font-weight: bold; }
             .sub { font-size: 12px; }
 
-            /* STAR BADGE */
             .star {
                 background: #ffca28;
                 color: #000;
@@ -90,7 +88,6 @@ def report_ui():
                 font-size: 13px;
             }
 
-            /* GRID */
             .grid {
                 display: grid;
                 grid-template-columns: repeat(4, 1fr);
@@ -107,13 +104,11 @@ def report_ui():
             .o { background:#fb8c00; }
             .r { background:#e53935; }
 
-            /* COLORS */
             .green { color:#2e7d32; font-weight:bold; }
             .yellow { color:#f9a825; font-weight:bold; }
             .orange { color:#ef6c00; font-weight:bold; }
             .red { color:#c62828; font-weight:bold; }
 
-            /* WEATHER */
             .weather {
                 background:#bbdefb;
                 padding:12px;
@@ -122,7 +117,6 @@ def report_ui():
                 font-size:13px;
             }
 
-            /* MARKET */
             .market {
                 background:#c8e6c9;
                 padding:12px;
@@ -178,26 +172,6 @@ def report_ui():
 
         </div>
 
-        <!-- HEATMAP -->
-        <div class="section">
-            <div class="grid">
-                <div class="cell g"></div><div class="cell lg"></div><div class="cell g"></div><div class="cell lg"></div>
-                <div class="cell lg"></div><div class="cell o"></div><div class="cell y"></div><div class="cell g"></div>
-                <div class="cell lg"></div><div class="cell r"></div><div class="cell o"></div><div class="cell g"></div>
-                <div class="cell g"></div><div class="cell y"></div><div class="cell lg"></div><div class="cell g"></div>
-            </div>
-        </div>
-
-        <!-- LEGEND -->
-        <div class="section">
-            <div class="card">
-                <div class="green">🟢 Green → Healthy → Continue current schedule</div>
-                <div class="yellow">🟡 Yellow → Mild → Monitor closely</div>
-                <div class="orange">🟠 Orange → Moderate → Inspect & treat</div>
-                <div class="red">🔴 Red → Severe → Immediate action required</div>
-            </div>
-        </div>
-
         <!-- WEATHER -->
         <div class="section">
             <div class="weather">
@@ -218,7 +192,11 @@ def report_ui():
 
                     <tr>
                         <td></td>
-                        <td>Sunny</td><td>Cloudy</td><td>Rain</td><td>Rain</td><td>Cloudy</td>
+                        <td>Sunny</td>
+                        <td>Cloudy</td>
+                        <td>Expected Rain</td>
+                        <td>Expected Rain</td>
+                        <td>Cloudy</td>
                     </tr>
 
                     <tr>
@@ -239,34 +217,6 @@ def report_ui():
                         <td>No Drying</td>
                     </tr>
                 </table>
-
-            </div>
-        </div>
-
-        <!-- MARKET -->
-        <div class="section">
-            <div class="market">
-
-                <b>Pomegranate (Sangli APMC)</b>
-
-                <div style="font-size:12px; margin:6px 0 10px;">
-                    <b>Updated:</b> 30 Mar 2026, 11:30 AM
-                </div>
-
-                <table>
-                    <tr><th></th><th>Min</th><th>Modal</th><th>Max</th></tr>
-                    <tr><td><b>Price</b></td><td>₹5000</td><td>₹7000</td><td>₹8500</td></tr>
-                    <tr><td><b>Arrival</b></td><td>80</td><td>120</td><td>60</td></tr>
-                </table>
-
-                <table>
-                    <tr><th></th><th>A</th><th>B</th><th>C</th></tr>
-                    <tr><td><b>Price</b></td><td>₹8500</td><td>₹7000</td><td>₹5000</td></tr>
-                </table>
-
-                <div style="margin-top:6px;">
-                    <b>Advice:</b> Hold premium, sell mid-grade
-                </div>
 
             </div>
         </div>
