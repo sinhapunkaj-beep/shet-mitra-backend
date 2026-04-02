@@ -21,93 +21,87 @@ def report_ui():
 
         <style>
             body {
-                font-family: Arial, sans-serif;
-                background: #000;
-                display: flex;
-                justify-content: center;
+                font-family: Arial;
+                background:#000;
+                display:flex;
+                justify-content:center;
             }
 
             .container {
-                width: 420px;
-                background: #f5f5f5;
-                border-radius: 12px;
-                overflow: hidden;
+                width:420px;
+                background:#f5f5f5;
+                border-radius:12px;
+                overflow:hidden;
             }
 
             .header {
-                background: #1b5e20;
-                color: white;
-                padding: 10px 12px 14px;
+                background:#1b5e20;
+                color:white;
+                padding:10px;
             }
 
             .date {
-                text-align: center;
-                font-size: 12px;
-                margin-bottom: 8px;
-                font-weight: bold;
+                text-align:center;
+                font-size:12px;
+                margin-bottom:6px;
+                font-weight:bold;
             }
 
-            .header-row {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
+            .row {
+                display:flex;
+                justify-content:space-between;
+                align-items:center;
             }
 
             .left {
-                display: flex;
-                gap: 10px;
-                align-items: center;
+                display:flex;
+                gap:10px;
+                align-items:center;
             }
 
-            .logo { width: 48px; height: 48px; }
+            .logo { width:48px; height:48px; }
 
-            .title { font-size: 16px; font-weight: bold; }
-            .sub { font-size: 12px; }
+            .title { font-weight:bold; font-size:16px; }
+            .sub { font-size:12px; }
 
             .star {
-                background: #ffca28;
-                color: #000;
-                padding: 6px 10px;
-                font-size: 11px;
-                font-weight: bold;
-                border-radius: 20px;
-                text-align: center;
-                max-width: 140px;
-                line-height: 1.2;
+                background:#ffca28;
+                padding:6px 10px;
+                border-radius:20px;
+                font-size:11px;
+                font-weight:bold;
+                text-align:center;
             }
 
-            .section {
-                padding: 12px;
-                margin-bottom: 8px;
-            }
-
-            .card {
-                background: #eee;
-                padding: 12px;
-                border-radius: 10px;
-                font-size: 13px;
-            }
+            .section { padding:12px; }
 
             .grid {
-                display: grid;
-                grid-template-columns: repeat(4, 1fr);
-                gap: 4px;
-                background: #ddd;
-                padding: 6px;
-                border-radius: 10px;
+                display:grid;
+                grid-template-columns:repeat(4,1fr);
+                gap:4px;
+                background:#ddd;
+                padding:6px;
+                border-radius:10px;
             }
 
-            .cell { height: 60px; border-radius: 4px; }
-            .g { background:#2e7d32; }
-            .lg { background:#66bb6a; }
-            .y { background:#fdd835; }
-            .o { background:#fb8c00; }
-            .r { background:#e53935; }
+            .cell { height:60px; border-radius:4px; }
+            .g{background:#2e7d32;}
+            .lg{background:#66bb6a;}
+            .y{background:#fdd835;}
+            .o{background:#fb8c00;}
+            .r{background:#e53935;}
 
-            .green { color:#2e7d32; font-weight:bold; }
-            .yellow { color:#f9a825; font-weight:bold; }
-            .orange { color:#ef6c00; font-weight:bold; }
-            .red { color:#c62828; font-weight:bold; }
+            .card {
+                background:#eee;
+                padding:12px;
+                border-radius:10px;
+                font-size:13px;
+            }
+
+            .green{color:#2e7d32;font-weight:bold;}
+            .yellow{color:#f9a825;font-weight:bold;}
+            .orange{color:#ef6c00;font-weight:bold;}
+            .red{color:#c62828;font-weight:bold;}
 
             .weather {
                 background:#bbdefb;
@@ -133,9 +127,7 @@ def report_ui():
                 margin-bottom:10px;
             }
 
-            td, th {
-                padding:5px;
-            }
+            td, th { padding:5px; }
 
             .footer {
                 text-align:center;
@@ -152,10 +144,9 @@ def report_ui():
 
         <!-- HEADER -->
         <div class="header">
-
             <div class="date">30 Mar 2026</div>
 
-            <div class="header-row">
+            <div class="row">
                 <div class="left">
                     <img src="/static/logo.svg" class="logo">
                     <div>
@@ -169,14 +160,33 @@ def report_ui():
                     Disease Identification
                 </div>
             </div>
+        </div>
 
+        <!-- HEATMAP -->
+        <div class="section">
+            <div class="grid">
+                <div class="cell g"></div><div class="cell lg"></div><div class="cell g"></div><div class="cell lg"></div>
+                <div class="cell lg"></div><div class="cell o"></div><div class="cell y"></div><div class="cell g"></div>
+                <div class="cell lg"></div><div class="cell r"></div><div class="cell o"></div><div class="cell g"></div>
+                <div class="cell g"></div><div class="cell y"></div><div class="cell lg"></div><div class="cell g"></div>
+            </div>
+        </div>
+
+        <!-- LEGEND -->
+        <div class="section">
+            <div class="card">
+                <div class="green">🟢 Green → Healthy → Continue</div>
+                <div class="yellow">🟡 Yellow → Monitor</div>
+                <div class="orange">🟠 Orange → Inspect</div>
+                <div class="red">🔴 Red → Immediate action</div>
+            </div>
         </div>
 
         <!-- WEATHER -->
         <div class="section">
             <div class="weather">
 
-                <div style="text-align:center; font-weight:bold; margin-bottom:8px;">
+                <div style="text-align:center;font-weight:bold;margin-bottom:8px;">
                     Weather (5-day summary)
                 </div>
 
@@ -192,11 +202,7 @@ def report_ui():
 
                     <tr>
                         <td></td>
-                        <td>Sunny</td>
-                        <td>Cloudy</td>
-                        <td>Expected Rain</td>
-                        <td>Expected Rain</td>
-                        <td>Cloudy</td>
+                        <td>Sunny</td><td>Cloudy</td><td>Expected Rain</td><td>Expected Rain</td><td>Cloudy</td>
                     </tr>
 
                     <tr>
@@ -217,6 +223,34 @@ def report_ui():
                         <td>No Drying</td>
                     </tr>
                 </table>
+
+            </div>
+        </div>
+
+        <!-- MARKET -->
+        <div class="section">
+            <div class="market">
+
+                <b>Pomegranate (Sangli APMC)</b>
+
+                <div style="font-size:12px;margin:6px 0 10px;">
+                    <b>Updated:</b> 30 Mar 2026, 11:30 AM
+                </div>
+
+                <table>
+                    <tr><th></th><th>Min</th><th>Modal</th><th>Max</th></tr>
+                    <tr><td><b>Price</b></td><td>₹5000</td><td>₹7000</td><td>₹8500</td></tr>
+                    <tr><td><b>Arrival</b></td><td>80</td><td>120</td><td>60</td></tr>
+                </table>
+
+                <table>
+                    <tr><th></th><th>A</th><th>B</th><th>C</th></tr>
+                    <tr><td><b>Price</b></td><td>₹8500</td><td>₹7000</td><td>₹5000</td></tr>
+                </table>
+
+                <div>
+                    <b>Advice:</b> Hold premium, sell mid-grade
+                </div>
 
             </div>
         </div>
