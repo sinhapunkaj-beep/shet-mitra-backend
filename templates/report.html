@@ -63,11 +63,12 @@
 
         .advisory-box {
             background: #fff3e0;
-            padding: 12px;
+            padding: 14px;
             margin-top: 12px;
             border-radius: 10px;
             font-weight: bold;
             white-space: pre-line;
+            border-left: 6px solid #ff9800;
         }
     </style>
 </head>
@@ -144,6 +145,7 @@
             </table>
         </div>
 
+        <!-- INTELLIGENT ADVISORY -->
         <div id="advisory-box" class="advisory-box"></div>
 
     </div>
@@ -151,9 +153,12 @@
 </div>
 
 <script>
+
+// LOCATION
 const LAT = 17.3850;
 const LON = 78.4867;
 
+// FETCH WEATHER
 async function getWeather() {
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&daily=weathercode,temperature_2m_max&timezone=auto`;
     const res = await fetch(url);
@@ -162,22 +167,23 @@ async function getWeather() {
 
 // WEATHER TEXT
 function weatherText(code) {
-    if (code < 3) return "Sunny";
-    if (code < 50) return "Cloudy";
-    if (code < 70) return "Rain";
-    return "Storm";
+    if (code < 3) return "☀️ Sunny";
+    if (code < 50) return "⛅ Cloudy";
+    if (code < 70) return "🌧 Rain";
+    return "⛈ Storm";
 }
 
-// SPRAY
+// SPRAY LOGIC
 function sprayLogic(code) {
     if (code >= 60) return ["No", "red-text"];
+    if (code >= 45) return ["Monitor", "orange-text"];
     return ["OK", "green-text"];
 }
 
-// ✅ FIXED DRYING LOGIC
+// ✅ FIXED DRYING LOGIC (RAIN PRIORITY)
 function dryingLogic(temp, code) {
 
-    // 🚫 PRIORITY: rain cancels drying
+    // rain cancels drying ALWAYS
     if (code >= 60) return ["No Drying", "red-text"];
 
     if (temp > 35) return ["Perfect", "green-text"];
@@ -186,24 +192,36 @@ function dryingLogic(temp, code) {
     return ["Poor", ""];
 }
 
-// UI UPDATE
+// UPDATE UI
 function updateUI(data) {
+
     const days = data.daily.time;
     const codes = data.daily.weathercode;
     const temps = data.daily.temperature_2m_max;
 
     for (let i = 0; i < 5; i++) {
 
+        // DATE
         document.getElementById("d"+(i+1)).innerText =
             new Date(days[i]).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 
-        document.getElementById("w"+(i+1)).innerText = weatherText(codes[i]);
+        // WEATHER
+        let wEl = document.getElementById("w"+(i+1));
+        wEl.innerText = weatherText(codes[i]);
 
+        // highlight rain visually
+        if (codes[i] >= 60) {
+            wEl.style.color = "red";
+            wEl.style.fontWeight = "bold";
+        }
+
+        // SPRAY
         let [spray, sc] = sprayLogic(codes[i]);
         let sEl = document.getElementById("s"+(i+1));
         sEl.innerText = spray;
         sEl.className = sc;
 
+        // DRYING
         let [dry, dc] = dryingLogic(temps[i], codes[i]);
         let dEl = document.getElementById("dr"+(i+1));
         dEl.innerText = dry;
@@ -211,7 +229,7 @@ function updateUI(data) {
     }
 }
 
-// INTELLIGENCE
+// INTELLIGENT ADVISORY
 function generateAdvisory(data) {
 
     const codes = data.daily.weathercode;
@@ -227,16 +245,22 @@ function generateAdvisory(data) {
     let msg = "";
 
     if (rainDays.length >= 2) {
-        msg += `⚠ Rain window from ${format(days[rainDays[0]])} to ${format(days[rainDays.at(-1)])}\n`;
-        msg += `👉 Avoid spraying during this period\n`;
-    } else if (rainDays.length === 1) {
+        msg += `🚨 CRITICAL ALERT\n`;
+        msg += `Rain from ${format(days[rainDays[0]])} → ${format(days[rainDays.at(-1)])}\n\n`;
+        msg += `❌ Stop spraying immediately\n`;
+        msg += `✅ Resume after rain window\n`;
+    }
+    else if (rainDays.length === 1) {
         msg += `⚠ Rain expected on ${format(days[rainDays[0]])}\n`;
-    } else {
-        msg += `✅ Safe spray window available\n`;
+        msg += `👉 Avoid spraying that day\n`;
+    }
+    else {
+        msg += `✅ SAFE CONDITIONS\n`;
+        msg += `👉 Ideal spray window available\n`;
     }
 
     if (Math.max(...temps) > 38) {
-        msg += `🔥 High heat → spray early morning/evening\n`;
+        msg += `\n🔥 HIGH HEAT ALERT\nSpray early morning/evening`;
     }
 
     return msg;
@@ -249,12 +273,10 @@ function format(d) {
 // INIT
 (async function () {
     const data = await getWeather();
-
     updateUI(data);
-
-    document.getElementById("advisory-box").innerText =
-        generateAdvisory(data);
+    document.getElementById("advisory-box").innerText = generateAdvisory(data);
 })();
+
 </script>
 
 </body>
