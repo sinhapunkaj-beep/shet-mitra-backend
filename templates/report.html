@@ -3,71 +3,63 @@
 <head>
     <title>Shet Mitra Report</title>
     <style>
-        body {
-            font-family: Arial;
-            background: #f4f4f4;
-        }
+        body { font-family: Arial; background: #f4f4f4; }
+
         .container {
-            width: 400px;
+            width: 420px;
             margin: auto;
             background: white;
-            border-radius: 10px;
+            border-radius: 12px;
             overflow: hidden;
         }
+
         .header {
             background: #1b5e20;
             color: white;
             padding: 15px;
+            text-align: center;
         }
-        .section {
-            padding: 15px;
-        }
+
+        .section { padding: 15px; }
+
         .grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 3px;
+            gap: 4px;
         }
-        .box {
-            height: 60px;
-        }
-        .green { background: #4caf50; }
-        .lightgreen { background: #81c784; }
-        .yellow { background: #fff176; }
-        .orange { background: #ffb74d; }
-        .red { background: #e57373; }
 
-        .card {
-            background: #eee;
+        .box { height: 60px; border-radius: 5px; }
+
+        .green { background: #2e7d32; }
+        .lightgreen { background: #66bb6a; }
+        .yellow { background: #fdd835; }
+        .orange { background: #fb8c00; }
+        .red { background: #e53935; }
+
+        .legend {
+            background: #f1f1f1;
             padding: 10px;
-            margin-top: 10px;
             border-radius: 8px;
-        }
-
-        .advisory {
-            background: #fff3e0;
-            padding: 10px;
+            font-size: 12px;
             margin-top: 10px;
         }
 
-        .weather {
-            background: #e3f2fd;
-            padding: 10px;
-            margin-top: 10px;
+        .weather-box {
+            background: linear-gradient(180deg, #a7c7e7, #90caf9);
+            padding: 12px;
+            border-radius: 10px;
+            margin-top: 15px;
         }
 
-        .danger {
-            background: #ffebee;
-            padding: 10px;
-            margin-top: 10px;
+        table {
+            width: 100%;
+            text-align: center;
+            font-size: 13px;
         }
 
-        .alert-badge {
-            background: #fff8e1;
-            padding: 6px;
-            margin-top: 5px;
-            border-radius: 5px;
-            font-weight: bold;
-        }
+        .green-text { color: green; font-weight: bold; }
+        .red-text { color: red; font-weight: bold; }
+        .orange-text { color: orange; font-weight: bold; }
     </style>
 </head>
 
@@ -76,15 +68,14 @@
 <div class="container">
 
     <div class="header">
-        <h3>Sahyadri Krushi</h3>
-        <p>Satellite + Weather | Farm report</p>
-        <p>Field: {{field_id}} | {{date}}</p>
+        <h3>Shet Mitra</h3>
+        <p>Sahyadri Krushi Intelligence</p>
+        <p>{{date}}</p>
     </div>
 
     <div class="section">
 
-        <h4>Crop health map</h4>
-
+        <!-- GRID -->
         <div class="grid">
             {% for row in grid %}
                 {% for cell in row %}
@@ -93,33 +84,55 @@
             {% endfor %}
         </div>
 
-        <div class="card">
-            <b>Leaf health:</b> {{health}} <br>
-            <b>Water condition:</b> {{water}}
+        <!-- LEGEND -->
+        <div class="legend">
+            🟢 Green → Healthy  
+            🟡 Yellow → Monitor  
+            🟠 Orange → Moderate  
+            🔴 Red → Critical
         </div>
 
-        <div class="advisory">
-            <h4>What to do</h4>
-            <ul>
-                {% for item in advisory %}
-                <li>{{item}}</li>
-                {% endfor %}
-            </ul>
-        </div>
+        <!-- WEATHER TABLE -->
+        <div class="weather-box">
+            <h4>Weather (5-day summary)</h4>
 
-        <!-- ✅ UPDATED WEATHER SECTION -->
-        <div class="weather">
-            <h4>Live Weather</h4>
+            <table>
+                <tr>
+                    <th></th>
+                    <th id="d1">--</th>
+                    <th id="d2">--</th>
+                    <th id="d3">--</th>
+                    <th id="d4">--</th>
+                    <th id="d5">--</th>
+                </tr>
 
-            <p>🌡 Temp: <span id="weather-temp">--</span></p>
-            <p>💨 Wind: <span id="weather-wind">--</span></p>
+                <tr>
+                    <td><b>Weather</b></td>
+                    <td id="w1">--</td>
+                    <td id="w2">--</td>
+                    <td id="w3">--</td>
+                    <td id="w4">--</td>
+                    <td id="w5">--</td>
+                </tr>
 
-            <div id="weather-alerts"></div>
-        </div>
+                <tr>
+                    <td><b>Spray</b></td>
+                    <td id="s1">--</td>
+                    <td id="s2">--</td>
+                    <td id="s3">--</td>
+                    <td id="s4">--</td>
+                    <td id="s5">--</td>
+                </tr>
 
-        <div class="danger">
-            <h4>Weather advice</h4>
-            <p>Avoid spraying during rain days</p>
+                <tr>
+                    <td><b>Drying</b></td>
+                    <td id="dr1">--</td>
+                    <td id="dr2">--</td>
+                    <td id="dr3">--</td>
+                    <td id="dr4">--</td>
+                    <td id="dr5">--</td>
+                </tr>
+            </table>
         </div>
 
     </div>
@@ -127,98 +140,79 @@
 </div>
 
 <!-- ========================= -->
-<!-- 🌦️ TASK 3 START -->
+<!-- 🌦️ TASK 3 (FULL ENGINE) -->
 <!-- ========================= -->
 
-<!-- TASK 3.1 -->
 <script>
-const WEATHER_CONFIG = {
-    latitude: 17.3850,
-    longitude: 78.4867,
-    timezone: "auto",
-    cacheKey: "weather_cache_v1",
-    cacheDuration: 3 * 60 * 60 * 1000
-};
+// CONFIG
+const LAT = 17.3850;
+const LON = 78.4867;
 
-async function fetchWeatherSafe() {
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${WEATHER_CONFIG.latitude}&longitude=${WEATHER_CONFIG.longitude}&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&current_weather=true&timezone=${WEATHER_CONFIG.timezone}`;
+// FETCH
+async function getWeather() {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&daily=weathercode,temperature_2m_max&timezone=auto`;
 
-    try {
-        const res = await fetch(url);
-        const data = await res.json();
+    const res = await fetch(url);
+    return await res.json();
+}
 
-        localStorage.setItem(WEATHER_CONFIG.cacheKey, JSON.stringify({
-            data: data,
-            time: Date.now()
-        }));
+// LOGIC
+function weatherText(code) {
+    if (code < 3) return "Sunny";
+    if (code < 50) return "Cloudy";
+    if (code < 70) return "Rain";
+    return "Storm";
+}
 
-        return data;
+function sprayLogic(code) {
+    if (code < 3) return ["OK", "green-text"];
+    if (code < 50) return ["OK", "green-text"];
+    if (code < 70) return ["No", "red-text"];
+    return ["No", "red-text"];
+}
 
-    } catch (error) {
-        const cache = JSON.parse(localStorage.getItem(WEATHER_CONFIG.cacheKey));
-        if (cache) return cache.data;
-        return null;
+function dryingLogic(temp, code) {
+    if (code >= 60) return ["Mold Risk", "red-text"];
+    if (temp > 35) return ["Perfect", "green-text"];
+    if (temp > 25) return ["Slow", "orange-text"];
+    return ["No Drying", ""];
+}
+
+// UPDATE UI
+function updateUI(data) {
+    const days = data.daily.time;
+    const codes = data.daily.weathercode;
+    const temps = data.daily.temperature_2m_max;
+
+    for (let i = 0; i < 5; i++) {
+
+        // DATE
+        document.getElementById("d"+(i+1)).innerText =
+            new Date(days[i]).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+
+        // WEATHER
+        document.getElementById("w"+(i+1)).innerText = weatherText(codes[i]);
+
+        // SPRAY
+        let [spray, sc] = sprayLogic(codes[i]);
+        let sEl = document.getElementById("s"+(i+1));
+        sEl.innerText = spray;
+        sEl.className = sc;
+
+        // DRYING
+        let [dry, dc] = dryingLogic(temps[i], codes[i]);
+        let dEl = document.getElementById("dr"+(i+1));
+        dEl.innerText = dry;
+        dEl.className = dc;
     }
 }
-</script>
 
-<!-- TASK 3.2 -->
-<script>
-function processWeatherSafe(data) {
-    if (!data) return null;
-
-    const current = data.current_weather;
-    const daily = data.daily;
-
-    const todayMax = daily.temperature_2m_max[0];
-    const rainProb = daily.precipitation_probability_max[0];
-
-    let alerts = [];
-
-    if (todayMax > 40) alerts.push("🔥 Heat Stress Risk");
-    if (rainProb < 10) alerts.push("💧 Irrigation Required");
-    if (rainProb > 40) alerts.push("⛈️ Spray Not Recommended");
-
-    return {
-        temp: current.temperature,
-        wind: current.windspeed,
-        alerts: alerts
-    };
-}
-</script>
-
-<!-- TASK 3.3 -->
-<script>
-function updateWeatherUI(weather) {
-    if (!weather) return;
-
-    const tempEl = document.getElementById("weather-temp");
-    const windEl = document.getElementById("weather-wind");
-    const alertEl = document.getElementById("weather-alerts");
-
-    if (tempEl) tempEl.innerText = weather.temp + "°C";
-    if (windEl) windEl.innerText = weather.wind + " km/h";
-
-    if (alertEl) {
-        alertEl.innerHTML = weather.alerts
-            .map(a => `<div class="alert-badge">${a}</div>`)
-            .join("");
-    }
-}
-</script>
-
-<!-- TASK 3.4 -->
-<script>
-(async function initWeather() {
-    const raw = await fetchWeatherSafe();
-    const processed = processWeatherSafe(raw);
-    updateWeatherUI(processed);
+// INIT
+(async function () {
+    const data = await getWeather();
+    updateUI(data);
 })();
 </script>
-
-<!-- ========================= -->
-<!-- 🌦️ TASK 3 END -->
-<!-- ========================= -->
 
 </body>
 </html>
