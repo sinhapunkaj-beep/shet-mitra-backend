@@ -1,3 +1,4 @@
+from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 
 @app.get("/report-ui", response_class=HTMLResponse)
