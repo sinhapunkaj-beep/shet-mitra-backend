@@ -105,10 +105,11 @@ def report_ui():
                 border-radius: 8px;
             }
 
+            /* DARKER MARKET BACKGROUND */
             .market {
-                background: #e8f5e9;
+                background: #c8e6c9;   /* darker green */
                 padding: 12px;
-                border-left: 6px solid #2e7d32;
+                border-left: 6px solid #1b5e20;
                 border-radius: 10px;
             }
 
@@ -123,11 +124,7 @@ def report_ui():
                 width: 100%;
                 text-align: center;
                 font-size: 14px;
-            }
-
-            .highlight {
-                font-weight: bold;
-                color: #2e7d32;
+                color: #000; /* ensure black text */
             }
 
             .footer {
@@ -136,6 +133,13 @@ def report_ui():
                 padding: 10px;
                 color: #555;
             }
+
+            .small {
+                font-size: 12px;
+                color: #333;
+                margin-top: 4px;
+            }
+
         </style>
     </head>
 
@@ -210,14 +214,16 @@ def report_ui():
             <div class="section">
                 <div class="market">
 
-                    <b>Pomegranate (Sangli APMC)</b><br><br>
+                    <b>Pomegranate (Sangli APMC)</b>
+                    <div class="small">Rates updated: 30 Mar 2026, 11:30 AM</div>
+                    <br>
 
                     <table>
                         <tr><th></th><th>Min</th><th>Modal</th><th>Max</th></tr>
                         <tr>
                             <td><b>Price</b></td>
                             <td>₹5000</td>
-                            <td class="highlight">₹7000</td>
+                            <td>₹7000</td>
                             <td>₹8500</td>
                         </tr>
                         <tr>
@@ -234,7 +240,7 @@ def report_ui():
                         <tr><th></th><th>A</th><th>B</th><th>C</th></tr>
                         <tr>
                             <td><b>Price</b></td>
-                            <td class="highlight">₹8500</td>
+                            <td>₹8500</td>
                             <td>₹7000</td>
                             <td>₹5000</td>
                         </tr>
