@@ -1,7 +1,18 @@
-app = FastAPI()
+# ===== IMPORTS =====
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 
+# ===== APP INIT =====
+app = FastAPI()
+
+
+# ===== ROOT =====
+@app.get("/")
+def home():
+    return {"message": "Shet Mitra API running 🚀"}
+
+
+# ===== REPORT UI =====
 @app.get("/report-ui", response_class=HTMLResponse)
 def report_ui():
     return """
@@ -41,7 +52,6 @@ def report_ui():
                 margin-bottom: 8px;
             }
 
-            /* HEATMAP */
             .grid {
                 display: grid;
                 grid-template-columns: repeat(4, 1fr);
@@ -60,7 +70,6 @@ def report_ui():
             .o { background: #fb8c00; }
             .r { background: #e53935; }
 
-            /* CARDS */
             .cards {
                 display: flex;
                 gap: 10px;
@@ -72,7 +81,6 @@ def report_ui():
                 border-radius: 10px;
             }
 
-            /* ADVISORY */
             .advisory {
                 background: #ffe0b2;
                 padding: 10px;
@@ -80,7 +88,6 @@ def report_ui():
                 border-radius: 8px;
             }
 
-            /* WEATHER */
             .weather {
                 background: #e3f2fd;
                 padding: 10px;
@@ -88,7 +95,6 @@ def report_ui():
                 border-radius: 8px;
             }
 
-            /* MARKET */
             .market {
                 background: #f1f8e9;
                 padding: 10px;
@@ -108,7 +114,6 @@ def report_ui():
     <body>
         <div class="container">
 
-            <!-- HEADER -->
             <div class="header">
                 <h2>Sahyadri Krushi</h2>
                 <div class="sub">Satellite + Weather | Farm health report</div>
@@ -117,10 +122,8 @@ def report_ui():
                 30 Mar 2026
             </div>
 
-            <!-- HEATMAP -->
             <div class="section">
                 <div class="title">Crop health map</div>
-
                 <div class="grid">
                     <div class="cell g"></div>
                     <div class="cell lg"></div>
@@ -144,7 +147,6 @@ def report_ui():
                 </div>
             </div>
 
-            <!-- SUMMARY -->
             <div class="section">
                 <div class="cards">
                     <div class="card">
@@ -158,7 +160,6 @@ def report_ui():
                 </div>
             </div>
 
-            <!-- ADVISORY -->
             <div class="section">
                 <div class="advisory">
                     <b>What to do</b>
@@ -170,7 +171,6 @@ def report_ui():
                 </div>
             </div>
 
-            <!-- WEATHER -->
             <div class="section">
                 <div class="weather">
                     <b>Weather (5-day summary)</b>
@@ -182,7 +182,6 @@ def report_ui():
                 </div>
             </div>
 
-            <!-- MARKET -->
             <div class="section">
                 <div class="market">
                     <b>Market Prices (Sangli APMC)</b><br><br>
@@ -193,7 +192,6 @@ def report_ui():
                 </div>
             </div>
 
-            <!-- FOOTER -->
             <div class="footer">
                 Source: Satellite + Weather + Market<br>
                 Sahyadri Krushi 🌿
