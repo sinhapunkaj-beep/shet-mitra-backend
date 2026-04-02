@@ -60,6 +60,14 @@
         .green-text { color: green; font-weight: bold; }
         .red-text { color: red; font-weight: bold; }
         .orange-text { color: orange; font-weight: bold; }
+
+        .advisory-box {
+            background: #fff3e0;
+            padding: 12px;
+            margin-top: 12px;
+            border-radius: 10px;
+            font-weight: bold;
+        }
     </style>
 </head>
 
@@ -92,7 +100,7 @@
             🔴 Red → Critical
         </div>
 
-        <!-- WEATHER TABLE -->
+        <!-- WEATHER -->
         <div class="weather-box">
             <h4>Weather (5-day summary)</h4>
 
@@ -135,28 +143,29 @@
             </table>
         </div>
 
+        <!-- INTELLIGENT ADVISORY -->
+        <div id="advisory-box" class="advisory-box">
+            Loading advisory...
+        </div>
+
     </div>
 
 </div>
 
-<!-- ========================= -->
-<!-- 🌦️ TASK 3 (FULL ENGINE) -->
-<!-- ========================= -->
-
 <script>
-// CONFIG
+// ===== WEATHER ENGINE =====
+
 const LAT = 17.3850;
 const LON = 78.4867;
 
-// FETCH
 async function getWeather() {
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&daily=weathercode,temperature_2m_max&timezone=auto`;
-
     const res = await fetch(url);
     return await res.json();
 }
 
-// LOGIC
+// ===== LOGIC =====
+
 function weatherText(code) {
     if (code < 3) return "Sunny";
     if (code < 50) return "Cloudy";
@@ -165,7 +174,6 @@ function weatherText(code) {
 }
 
 function sprayLogic(code) {
-    if (code < 3) return ["OK", "green-text"];
     if (code < 50) return ["OK", "green-text"];
     if (code < 70) return ["No", "red-text"];
     return ["No", "red-text"];
@@ -178,7 +186,8 @@ function dryingLogic(temp, code) {
     return ["No Drying", ""];
 }
 
-// UPDATE UI
+// ===== UI UPDATE =====
+
 function updateUI(data) {
     const days = data.daily.time;
     const codes = data.daily.weathercode;
@@ -186,20 +195,16 @@ function updateUI(data) {
 
     for (let i = 0; i < 5; i++) {
 
-        // DATE
         document.getElementById("d"+(i+1)).innerText =
             new Date(days[i]).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 
-        // WEATHER
         document.getElementById("w"+(i+1)).innerText = weatherText(codes[i]);
 
-        // SPRAY
         let [spray, sc] = sprayLogic(codes[i]);
         let sEl = document.getElementById("s"+(i+1));
         sEl.innerText = spray;
         sEl.className = sc;
 
-        // DRYING
         let [dry, dc] = dryingLogic(temps[i], codes[i]);
         let dEl = document.getElementById("dr"+(i+1));
         dEl.innerText = dry;
@@ -207,10 +212,52 @@ function updateUI(data) {
     }
 }
 
-// INIT
+// ===== INTELLIGENCE ENGINE =====
+
+function generateAdvisory(data) {
+    const codes = data.daily.weathercode;
+    const temps = data.daily.temperature_2m_max;
+    const days = data.daily.time;
+
+    let rainDays = [];
+    let safeDays = [];
+
+    for (let i = 0; i < 5; i++) {
+        if (codes[i] >= 60) rainDays.push(i);
+        else safeDays.push(i);
+    }
+
+    let message = "";
+
+    if (rainDays.length >= 2) {
+        message = `⚠ Rain expected on ${rainDays.map(i => formatDay(days[i])).join(", ")}. Avoid spraying.`;
+    } else {
+        message = `✅ Safe spray window on ${safeDays.map(i => formatDay(days[i])).join(", ")}.`;
+    }
+
+    if (Math.max(...temps) > 38) {
+        message += " 🔥 High temperature risk.";
+    }
+
+    return message;
+}
+
+function formatDay(dateStr) {
+    return new Date(dateStr).toLocaleDateString("en-GB", {
+        day: "numeric",
+        month: "short"
+    });
+}
+
+// ===== INIT =====
+
 (async function () {
     const data = await getWeather();
+
     updateUI(data);
+
+    const advice = generateAdvisory(data);
+    document.getElementById("advisory-box").innerText = advice;
 })();
 </script>
 
