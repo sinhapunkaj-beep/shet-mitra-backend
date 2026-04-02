@@ -5,10 +5,10 @@ from fastapi.templating import Jinja2Templates
 
 app = FastAPI()
 
-# Static files (logo, etc.)
+# Static files
 app.mount("/static", StaticFiles(directory="."), name="static")
 
-# Templates folder
+# Templates
 templates = Jinja2Templates(directory="templates")
 
 
@@ -17,11 +17,10 @@ def home():
     return {"message": "Shet Mitra API running 🚀"}
 
 
-# ✅ Proper template rendering (BEST WAY)
 @app.get("/report-ui", response_class=HTMLResponse)
 def report_ui(request: Request):
 
-    # Dummy grid (your existing UI needs this)
+    # ✅ SAFE GRID (must match template)
     grid = [
         ["green", "lightgreen", "green", "lightgreen"],
         ["lightgreen", "orange", "yellow", "green"],
@@ -32,8 +31,8 @@ def report_ui(request: Request):
     return templates.TemplateResponse(
         "report.html",
         {
-            "request": request,
-            "date": "30 Mar 2026",
-            "grid": grid
+            "request": request,   # REQUIRED by Jinja2
+            "grid": grid,
+            "date": "2 Apr 2026"
         }
     )
