@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Shet Mitra</title>
+<title>Shet Mitra v2</title>
 
 <style>
 body { font-family: Arial; background:#f4f4f4; }
@@ -57,17 +57,12 @@ table {
     font-size:13px;
 }
 
-/* 🔥 STRONG VISUAL COLORS */
 .ok { color:green; font-weight:bold; }
 .no { color:red; font-weight:bold; }
 .warn { color:orange; font-weight:bold; }
 
-/* 🔥 RAIN COLUMN HIGHLIGHT */
-.rain-col {
-    background:#ffe5e5;
-}
+.rain-col { background:#ffe5e5; }
 
-/* 🔥 BIG ALERT BOX */
 .alert-box {
     background:#ffebee;
     border-left:6px solid red;
@@ -85,7 +80,7 @@ table {
 <div class="container">
 
 <div class="header">
-<h3>Shet Mitra</h3>
+<h3>Shet Mitra v2</h3>
 <p>{{date}}</p>
 </div>
 
@@ -149,17 +144,14 @@ table {
 
 <script>
 
-// LOCATION
 const LAT=17.385;
 const LON=78.486;
 
-// FETCH
 async function getWeather(){
 const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&daily=weathercode,temperature_2m_max&timezone=auto`);
 return await r.json();
 }
 
-// WEATHER TEXT
 function wt(c){
 if(c<3) return "☀️";
 if(c<50) return "⛅";
@@ -167,21 +159,20 @@ if(c<70) return "🌧";
 return "⛈";
 }
 
-// LOGIC
 function spray(c){
 if(c>=60) return ["NO","no"];
 if(c>=45) return ["Monitor","warn"];
 return ["OK","ok"];
 }
 
+// ✅ FIXED DRYING
 function drying(t,c){
-if(c>=60) return ["NO","no"]; // FIXED
+if(c>=60) return ["NO","no"];   // ← KEY FIX
 if(t>35) return ["Perfect","ok"];
 if(t>25) return ["Slow","warn"];
 return ["Poor",""];
 }
 
-// UI
 function update(d){
 
 let codes=d.daily.weathercode;
@@ -197,7 +188,7 @@ new Date(days[i]).toLocaleDateString("en-GB",{day:"numeric",month:"short"});
 let w=document.getElementById("w"+(i+1));
 w.innerText=wt(codes[i]);
 
-// 🔥 highlight rain column
+// 🔴 highlight rain column
 if(codes[i]>=60){
 w.parentElement.children[i+1].classList.add("rain-col");
 }
@@ -216,7 +207,6 @@ dre.className=dc;
 }
 }
 
-// ALERT ENGINE
 function advisory(d){
 
 let codes=d.daily.weathercode;
@@ -239,7 +229,6 @@ function fmt(d){
 return new Date(d).toLocaleDateString("en-GB",{day:"numeric",month:"short"});
 }
 
-// INIT
 (async()=>{
 let data=await getWeather();
 update(data);
