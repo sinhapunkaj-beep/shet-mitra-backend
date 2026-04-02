@@ -67,6 +67,7 @@
             margin-top: 12px;
             border-radius: 10px;
             font-weight: bold;
+            white-space: pre-line;
         }
     </style>
 </head>
@@ -107,54 +108,49 @@
             <table>
                 <tr>
                     <th></th>
-                    <th id="d1">--</th>
-                    <th id="d2">--</th>
-                    <th id="d3">--</th>
-                    <th id="d4">--</th>
-                    <th id="d5">--</th>
+                    <th id="d1"></th>
+                    <th id="d2"></th>
+                    <th id="d3"></th>
+                    <th id="d4"></th>
+                    <th id="d5"></th>
                 </tr>
 
                 <tr>
                     <td><b>Weather</b></td>
-                    <td id="w1">--</td>
-                    <td id="w2">--</td>
-                    <td id="w3">--</td>
-                    <td id="w4">--</td>
-                    <td id="w5">--</td>
+                    <td id="w1"></td>
+                    <td id="w2"></td>
+                    <td id="w3"></td>
+                    <td id="w4"></td>
+                    <td id="w5"></td>
                 </tr>
 
                 <tr>
                     <td><b>Spray</b></td>
-                    <td id="s1">--</td>
-                    <td id="s2">--</td>
-                    <td id="s3">--</td>
-                    <td id="s4">--</td>
-                    <td id="s5">--</td>
+                    <td id="s1"></td>
+                    <td id="s2"></td>
+                    <td id="s3"></td>
+                    <td id="s4"></td>
+                    <td id="s5"></td>
                 </tr>
 
                 <tr>
                     <td><b>Drying</b></td>
-                    <td id="dr1">--</td>
-                    <td id="dr2">--</td>
-                    <td id="dr3">--</td>
-                    <td id="dr4">--</td>
-                    <td id="dr5">--</td>
+                    <td id="dr1"></td>
+                    <td id="dr2"></td>
+                    <td id="dr3"></td>
+                    <td id="dr4"></td>
+                    <td id="dr5"></td>
                 </tr>
             </table>
         </div>
 
-        <!-- INTELLIGENT ADVISORY -->
-        <div id="advisory-box" class="advisory-box">
-            Loading advisory...
-        </div>
+        <div id="advisory-box" class="advisory-box"></div>
 
     </div>
 
 </div>
 
 <script>
-// ===== WEATHER ENGINE =====
-
 const LAT = 17.3850;
 const LON = 78.4867;
 
@@ -164,8 +160,7 @@ async function getWeather() {
     return await res.json();
 }
 
-// ===== LOGIC =====
-
+// WEATHER TEXT
 function weatherText(code) {
     if (code < 3) return "Sunny";
     if (code < 50) return "Cloudy";
@@ -173,21 +168,25 @@ function weatherText(code) {
     return "Storm";
 }
 
+// SPRAY
 function sprayLogic(code) {
-    if (code < 50) return ["OK", "green-text"];
-    if (code < 70) return ["No", "red-text"];
-    return ["No", "red-text"];
+    if (code >= 60) return ["No", "red-text"];
+    return ["OK", "green-text"];
 }
 
+// ✅ FIXED DRYING LOGIC
 function dryingLogic(temp, code) {
-    if (code >= 60) return ["Mold Risk", "red-text"];
+
+    // 🚫 PRIORITY: rain cancels drying
+    if (code >= 60) return ["No Drying", "red-text"];
+
     if (temp > 35) return ["Perfect", "green-text"];
     if (temp > 25) return ["Slow", "orange-text"];
-    return ["No Drying", ""];
+
+    return ["Poor", ""];
 }
 
-// ===== UI UPDATE =====
-
+// UI UPDATE
 function updateUI(data) {
     const days = data.daily.time;
     const codes = data.daily.weathercode;
@@ -212,52 +211,49 @@ function updateUI(data) {
     }
 }
 
-// ===== INTELLIGENCE ENGINE =====
-
+// INTELLIGENCE
 function generateAdvisory(data) {
+
     const codes = data.daily.weathercode;
     const temps = data.daily.temperature_2m_max;
     const days = data.daily.time;
 
     let rainDays = [];
-    let safeDays = [];
 
     for (let i = 0; i < 5; i++) {
         if (codes[i] >= 60) rainDays.push(i);
-        else safeDays.push(i);
     }
 
-    let message = "";
+    let msg = "";
 
     if (rainDays.length >= 2) {
-        message = `⚠ Rain expected on ${rainDays.map(i => formatDay(days[i])).join(", ")}. Avoid spraying.`;
+        msg += `⚠ Rain window from ${format(days[rainDays[0]])} to ${format(days[rainDays.at(-1)])}\n`;
+        msg += `👉 Avoid spraying during this period\n`;
+    } else if (rainDays.length === 1) {
+        msg += `⚠ Rain expected on ${format(days[rainDays[0]])}\n`;
     } else {
-        message = `✅ Safe spray window on ${safeDays.map(i => formatDay(days[i])).join(", ")}.`;
+        msg += `✅ Safe spray window available\n`;
     }
 
     if (Math.max(...temps) > 38) {
-        message += " 🔥 High temperature risk.";
+        msg += `🔥 High heat → spray early morning/evening\n`;
     }
 
-    return message;
+    return msg;
 }
 
-function formatDay(dateStr) {
-    return new Date(dateStr).toLocaleDateString("en-GB", {
-        day: "numeric",
-        month: "short"
-    });
+function format(d) {
+    return new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 }
 
-// ===== INIT =====
-
+// INIT
 (async function () {
     const data = await getWeather();
 
     updateUI(data);
 
-    const advice = generateAdvisory(data);
-    document.getElementById("advisory-box").innerText = advice;
+    document.getElementById("advisory-box").innerText =
+        generateAdvisory(data);
 })();
 </script>
 
