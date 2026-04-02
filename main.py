@@ -34,12 +34,24 @@ def report_ui():
                 overflow: hidden;
             }
 
+            /* HEADER */
             .header {
                 background: #1b5e20;
                 color: white;
                 padding: 12px;
+            }
+
+            .date {
+                text-align: center;
+                font-size: 12px;
+                font-weight: bold;
+                margin-bottom: 6px;
+            }
+
+            .header-row {
                 display: flex;
                 justify-content: space-between;
+                align-items: center;
             }
 
             .left {
@@ -53,7 +65,16 @@ def report_ui():
             .title { font-size: 16px; font-weight: bold; }
             .sub { font-size: 12px; }
 
-            .right { font-size: 12px; text-align: right; }
+            .star {
+                background: #ffca28;
+                color: #000;
+                font-weight: bold;
+                font-size: 11px;
+                padding: 6px 10px;
+                border-radius: 20px;
+                text-align: center;
+                line-height: 1.2;
+            }
 
             .section {
                 padding: 12px;
@@ -135,19 +156,24 @@ def report_ui():
 
         <!-- HEADER -->
         <div class="header">
-            <div class="left">
-                <img src="/static/logo.svg" class="logo">
-                <div>
-                    <div class="title">Shet Mitra</div>
-                    <div class="sub">Sahyadri Krushi Intelligence</div>
+
+            <div class="date">30 Mar 2026</div>
+
+            <div class="header-row">
+                <div class="left">
+                    <img src="/static/logo.svg" class="logo">
+                    <div>
+                        <div class="title">Shet Mitra</div>
+                        <div class="sub">Sahyadri Krushi Intelligence</div>
+                    </div>
+                </div>
+
+                <div class="star">
+                    ⭐ Upcoming Feature<br>
+                    Disease Identification
                 </div>
             </div>
 
-            <div class="right">
-                30 Mar 2026<br>
-                <b>Upcoming Feature</b><br>
-                Disease Identification
-            </div>
         </div>
 
         <!-- HEATMAP -->
