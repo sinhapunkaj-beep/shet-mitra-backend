@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 
 app = FastAPI()
 
-# Serve logo
+# Serve static files (logo.svg)
 app.mount("/static", StaticFiles(directory="."), name="static")
 
 
@@ -35,19 +35,26 @@ def report_ui():
                 overflow: hidden;
             }
 
+            /* HEADER */
             .header {
                 background: #1b5e20;
                 color: white;
                 padding: 12px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .left {
                 display: flex;
                 align-items: center;
                 gap: 10px;
             }
 
             .logo {
-                width: 45px;
-                height: 45px;
-                border-radius: 6px;
+                width: 48px;
+                height: 48px;
+                object-fit: contain;
             }
 
             .title {
@@ -60,6 +67,17 @@ def report_ui():
                 opacity: 0.9;
             }
 
+            .right {
+                text-align: right;
+                font-size: 12px;
+            }
+
+            .insight {
+                margin-top: 4px;
+                font-size: 11px;
+                color: #c8e6c9;
+            }
+
             .meta {
                 padding: 10px;
                 font-size: 12px;
@@ -70,6 +88,7 @@ def report_ui():
                 padding: 15px;
             }
 
+            /* HEATMAP */
             .grid {
                 display: grid;
                 grid-template-columns: repeat(4, 1fr);
@@ -86,6 +105,7 @@ def report_ui():
             .o { background: #fb8c00; }
             .r { background: #e53935; }
 
+            /* SUMMARY */
             .cards {
                 display: flex;
                 gap: 10px;
@@ -98,6 +118,7 @@ def report_ui():
                 border-radius: 10px;
             }
 
+            /* ADVISORY */
             .advisory {
                 background: #ffe0b2;
                 padding: 10px;
@@ -105,14 +126,15 @@ def report_ui():
                 border-radius: 8px;
             }
 
-            /* DARKER MARKET BACKGROUND */
+            /* MARKET */
             .market {
-                background: #c8e6c9;   /* darker green */
+                background: #c8e6c9;
                 padding: 12px;
                 border-left: 6px solid #1b5e20;
                 border-radius: 10px;
             }
 
+            /* WEATHER */
             .weather {
                 background: #e3f2fd;
                 padding: 12px;
@@ -124,7 +146,13 @@ def report_ui():
                 width: 100%;
                 text-align: center;
                 font-size: 14px;
-                color: #000; /* ensure black text */
+                color: #000;
+            }
+
+            .small {
+                font-size: 12px;
+                color: #333;
+                margin-top: 4px;
             }
 
             .footer {
@@ -132,12 +160,6 @@ def report_ui():
                 font-size: 12px;
                 padding: 10px;
                 color: #555;
-            }
-
-            .small {
-                font-size: 12px;
-                color: #333;
-                margin-top: 4px;
             }
 
         </style>
@@ -148,15 +170,27 @@ def report_ui():
 
             <!-- HEADER -->
             <div class="header">
-                <img src="/static/logo.png" class="logo">
-                <div>
-                    <div class="title">Shet Mitra</div>
-                    <div class="sub">Sahyadri Krushi Intelligence</div>
+
+                <div class="left">
+                    <img src="/static/logo.svg" class="logo">
+                    <div>
+                        <div class="title">Shet Mitra</div>
+                        <div class="sub">Sahyadri Krushi Intelligence</div>
+                    </div>
                 </div>
+
+                <div class="right">
+                    30 Mar 2026
+                    <div class="insight">
+                        • Spray window opens tomorrow
+                    </div>
+                </div>
+
             </div>
 
+            <!-- META -->
             <div class="meta">
-                Patil Farm, Tasgaon | 5 acres | 30 Mar 2026
+                Patil Farm, Tasgaon | 5 acres
             </div>
 
             <!-- HEATMAP -->
@@ -257,9 +291,26 @@ def report_ui():
                 <div class="weather">
 
                     <table>
-                        <tr><th></th><th>31 Mar</th><th>1 Apr</th><th>2 Apr</th><th>3 Apr</th><th>4 Apr</th></tr>
-                        <tr><td><b>Weather</b></td><td>☀️</td><td>🌤️</td><td>🌧️</td><td>🌧️</td><td>🌤️</td></tr>
-                        <tr><td><b>Advice</b></td>
+                        <tr>
+                            <th></th>
+                            <th>31 Mar</th>
+                            <th>1 Apr</th>
+                            <th>2 Apr</th>
+                            <th>3 Apr</th>
+                            <th>4 Apr</th>
+                        </tr>
+
+                        <tr>
+                            <td><b>Weather</b></td>
+                            <td>☀️</td>
+                            <td>🌤️</td>
+                            <td>🌧️</td>
+                            <td>🌧️</td>
+                            <td>🌤️</td>
+                        </tr>
+
+                        <tr>
+                            <td><b>Advice</b></td>
                             <td style="color:green;">Spray OK</td>
                             <td style="color:green;">Spray OK</td>
                             <td style="color:red;">No Spray</td>
