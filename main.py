@@ -4,7 +4,6 @@ from fastapi.staticfiles import StaticFiles
 
 app = FastAPI()
 
-# Serve static files (logo.svg)
 app.mount("/static", StaticFiles(directory="."), name="static")
 
 
@@ -22,7 +21,7 @@ def report_ui():
 
         <style>
             body {
-                font-family: Arial;
+                font-family: Arial, sans-serif;
                 background: #000;
                 display: flex;
                 justify-content: center;
@@ -58,7 +57,7 @@ def report_ui():
             }
 
             .title {
-                font-size: 18px;
+                font-size: 16px;
                 font-weight: bold;
             }
 
@@ -76,16 +75,19 @@ def report_ui():
                 margin-top: 4px;
                 font-size: 11px;
                 color: #c8e6c9;
+                font-weight: bold;
+                max-width: 160px;
             }
 
             .meta {
                 padding: 10px;
                 font-size: 12px;
                 background: #e8f5e9;
+                font-weight: bold;
             }
 
             .section {
-                padding: 15px;
+                padding: 14px;
             }
 
             /* HEATMAP */
@@ -113,17 +115,23 @@ def report_ui():
 
             .card {
                 flex: 1;
-                background: #eee;
+                background: #eeeeee;
                 padding: 10px;
                 border-radius: 10px;
+                font-size: 13px;
             }
 
             /* ADVISORY */
             .advisory {
                 background: #ffe0b2;
-                padding: 10px;
+                padding: 12px;
                 border-left: 5px solid orange;
                 border-radius: 8px;
+                font-size: 13px;
+            }
+
+            .advisory b {
+                font-size: 14px;
             }
 
             /* MARKET */
@@ -132,27 +140,39 @@ def report_ui():
                 padding: 12px;
                 border-left: 6px solid #1b5e20;
                 border-radius: 10px;
+                font-size: 13px;
             }
 
             /* WEATHER */
             .weather {
-                background: #e3f2fd;
+                background: #bbdefb;
                 padding: 12px;
-                border-left: 6px solid #2196f3;
+                border-left: 6px solid #1565c0;
                 border-radius: 10px;
+                font-size: 13px;
             }
 
             table {
                 width: 100%;
                 text-align: center;
-                font-size: 14px;
-                color: #000;
+                font-size: 13px;
+                border-collapse: collapse;
             }
+
+            td, th {
+                padding: 4px;
+            }
+
+            /* COLORS */
+            .green { color: green; font-weight: bold; }
+            .red { color: red; font-weight: bold; }
+            .orange { color: orange; font-weight: bold; }
 
             .small {
                 font-size: 12px;
                 color: #333;
                 margin-top: 4px;
+                font-weight: bold;
             }
 
             .footer {
@@ -160,6 +180,7 @@ def report_ui():
                 font-size: 12px;
                 padding: 10px;
                 color: #555;
+                font-weight: bold;
             }
 
         </style>
@@ -182,7 +203,7 @@ def report_ui():
                 <div class="right">
                     30 Mar 2026
                     <div class="insight">
-                        • Spray window opens tomorrow
+                        Upcoming Feature - Disease Identification and Advice
                     </div>
                 </div>
 
@@ -223,11 +244,11 @@ def report_ui():
                 <div class="cards">
                     <div class="card">
                         <b>Leaf health</b><br>
-                        <span style="color:green;font-size:18px;">Good</span>
+                        <span class="green">Good</span>
                     </div>
                     <div class="card">
                         <b>Water condition</b><br>
-                        <span style="color:orange;font-size:18px;">Check</span>
+                        <span class="orange">Check</span>
                     </div>
                 </div>
             </div>
@@ -254,30 +275,15 @@ def report_ui():
 
                     <table>
                         <tr><th></th><th>Min</th><th>Modal</th><th>Max</th></tr>
-                        <tr>
-                            <td><b>Price</b></td>
-                            <td>₹5000</td>
-                            <td>₹7000</td>
-                            <td>₹8500</td>
-                        </tr>
-                        <tr>
-                            <td><b>Arrival</b></td>
-                            <td>80</td>
-                            <td>120</td>
-                            <td>60</td>
-                        </tr>
+                        <tr><td><b>Price</b></td><td>₹5000</td><td>₹7000</td><td>₹8500</td></tr>
+                        <tr><td><b>Arrival</b></td><td>80</td><td>120</td><td>60</td></tr>
                     </table>
 
                     <br>
 
                     <table>
                         <tr><th></th><th>A</th><th>B</th><th>C</th></tr>
-                        <tr>
-                            <td><b>Price</b></td>
-                            <td>₹8500</td>
-                            <td>₹7000</td>
-                            <td>₹5000</td>
-                        </tr>
+                        <tr><td><b>Price</b></td><td>₹8500</td><td>₹7000</td><td>₹5000</td></tr>
                     </table>
 
                     <br>
@@ -311,15 +317,15 @@ def report_ui():
 
                         <tr>
                             <td><b>Advice</b></td>
-                            <td style="color:green;">Spray OK</td>
-                            <td style="color:green;">Spray OK</td>
-                            <td style="color:red;">No Spray</td>
-                            <td style="color:red;">No Spray</td>
-                            <td style="color:orange;">Monitor</td>
+                            <td class="green">Spray OK</td>
+                            <td class="green">Spray OK</td>
+                            <td class="red">No Spray</td>
+                            <td class="red">No Spray</td>
+                            <td class="orange">Monitor</td>
                         </tr>
                     </table>
 
-                    <div style="text-align:center; margin-top:6px; font-size:13px;">
+                    <div style="text-align:center; margin-top:6px; font-size:12px; font-weight:bold;">
                         Weather (5-day summary)
                     </div>
 
