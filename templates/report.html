@@ -71,7 +71,6 @@ table {
     font-weight:bold;
     white-space:pre-line;
 }
-
 </style>
 </head>
 
@@ -81,15 +80,29 @@ table {
 
 <div class="header">
 <h3>Shet Mitra v2</h3>
-<p>{{date}}</p>
+<p>2 Apr 2026</p>
 </div>
 
 <div class="grid">
-{% for row in grid %}
-{% for cell in row %}
-<div class="box {{cell}}"></div>
-{% endfor %}
-{% endfor %}
+<div class="box green"></div>
+<div class="box lightgreen"></div>
+<div class="box green"></div>
+<div class="box lightgreen"></div>
+
+<div class="box lightgreen"></div>
+<div class="box orange"></div>
+<div class="box yellow"></div>
+<div class="box green"></div>
+
+<div class="box lightgreen"></div>
+<div class="box red"></div>
+<div class="box orange"></div>
+<div class="box green"></div>
+
+<div class="box green"></div>
+<div class="box yellow"></div>
+<div class="box lightgreen"></div>
+<div class="box green"></div>
 </div>
 
 <div class="legend">
@@ -101,141 +114,44 @@ table {
 
 <table>
 <tr>
-<th></th>
-<th id="d1"></th>
-<th id="d2"></th>
-<th id="d3"></th>
-<th id="d4"></th>
-<th id="d5"></th>
+<th></th><th>2 Apr</th><th>3 Apr</th><th>4 Apr</th><th>5 Apr</th><th>6 Apr</th>
 </tr>
 
 <tr>
 <td><b>Weather</b></td>
-<td id="w1"></td>
-<td id="w2"></td>
-<td id="w3"></td>
-<td id="w4"></td>
-<td id="w5"></td>
+<td>☀️</td><td>⛅</td><td>🌧</td><td>🌧</td><td>☀️</td>
 </tr>
 
 <tr>
 <td><b>Spray</b></td>
-<td id="s1"></td>
-<td id="s2"></td>
-<td id="s3"></td>
-<td id="s4"></td>
-<td id="s5"></td>
+<td class="ok">OK</td>
+<td class="ok">OK</td>
+<td class="no">NO</td>
+<td class="no">NO</td>
+<td class="ok">OK</td>
 </tr>
 
 <tr>
 <td><b>Drying</b></td>
-<td id="dr1"></td>
-<td id="dr2"></td>
-<td id="dr3"></td>
-<td id="dr4"></td>
-<td id="dr5"></td>
+<td class="ok">Perfect</td>
+<td class="ok">Perfect</td>
+<td class="no">NO</td>
+<td class="no">NO</td>
+<td class="ok">Perfect</td>
 </tr>
+
 </table>
 </div>
 
-<div id="alert" class="alert-box"></div>
+<div class="alert-box">
+🚨 HEAVY RAIN WINDOW  
+4 Apr → 5 Apr  
 
+STOP spraying  
+Resume after rain
 </div>
 
-<script>
-
-const LAT=17.385;
-const LON=78.486;
-
-async function getWeather(){
-const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&daily=weathercode,temperature_2m_max&timezone=auto`);
-return await r.json();
-}
-
-function wt(c){
-if(c<3) return "☀️";
-if(c<50) return "⛅";
-if(c<70) return "🌧";
-return "⛈";
-}
-
-function spray(c){
-if(c>=60) return ["NO","no"];
-if(c>=45) return ["Monitor","warn"];
-return ["OK","ok"];
-}
-
-// ✅ FIXED DRYING
-function drying(t,c){
-if(c>=60) return ["NO","no"];   // ← KEY FIX
-if(t>35) return ["Perfect","ok"];
-if(t>25) return ["Slow","warn"];
-return ["Poor",""];
-}
-
-function update(d){
-
-let codes=d.daily.weathercode;
-let temps=d.daily.temperature_2m_max;
-let days=d.daily.time;
-
-for(let i=0;i<5;i++){
-
-document.getElementById("d"+(i+1)).innerText=
-new Date(days[i]).toLocaleDateString("en-GB",{day:"numeric",month:"short"});
-
-// weather
-let w=document.getElementById("w"+(i+1));
-w.innerText=wt(codes[i]);
-
-// 🔴 highlight rain column
-if(codes[i]>=60){
-w.parentElement.children[i+1].classList.add("rain-col");
-}
-
-// spray
-let [s,sc]=spray(codes[i]);
-let se=document.getElementById("s"+(i+1));
-se.innerText=s;
-se.className=sc;
-
-// drying
-let [dr,dc]=drying(temps[i],codes[i]);
-let dre=document.getElementById("dr"+(i+1));
-dre.innerText=dr;
-dre.className=dc;
-}
-}
-
-function advisory(d){
-
-let codes=d.daily.weathercode;
-let days=d.daily.time;
-
-let rain=codes.map((c,i)=>c>=60?i:null).filter(x=>x!==null);
-
-if(rain.length>=2){
-return `🚨 HEAVY RAIN WINDOW\n${fmt(days[rain[0]])} → ${fmt(days[rain.at(-1)])}\n\nSTOP spraying\nResume after rain`;
-}
-
-if(rain.length==1){
-return `⚠ Rain on ${fmt(days[rain[0]])}\nAvoid spraying`;
-}
-
-return `✅ Safe spray window`;
-}
-
-function fmt(d){
-return new Date(d).toLocaleDateString("en-GB",{day:"numeric",month:"short"});
-}
-
-(async()=>{
-let data=await getWeather();
-update(data);
-document.getElementById("alert").innerText=advisory(data);
-})();
-
-</script>
+</div>
 
 </body>
 </html>
