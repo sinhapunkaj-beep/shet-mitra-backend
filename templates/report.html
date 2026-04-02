@@ -60,8 +60,17 @@
             padding: 10px;
             margin-top: 10px;
         }
+
+        .alert-badge {
+            background: #fff8e1;
+            padding: 6px;
+            margin-top: 5px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
     </style>
 </head>
+
 <body>
 
 <div class="container">
@@ -73,6 +82,7 @@
     </div>
 
     <div class="section">
+
         <h4>Crop health map</h4>
 
         <div class="grid">
@@ -97,9 +107,14 @@
             </ul>
         </div>
 
+        <!-- ✅ UPDATED WEATHER SECTION -->
         <div class="weather">
-            <h4>5-day weather</h4>
-            <p>Rain: {{rain}}</p>
+            <h4>Live Weather</h4>
+
+            <p>🌡 Temp: <span id="weather-temp">--</span></p>
+            <p>💨 Wind: <span id="weather-wind">--</span></p>
+
+            <div id="weather-alerts"></div>
         </div>
 
         <div class="danger">
@@ -110,6 +125,100 @@
     </div>
 
 </div>
+
+<!-- ========================= -->
+<!-- 🌦️ TASK 3 START -->
+<!-- ========================= -->
+
+<!-- TASK 3.1 -->
+<script>
+const WEATHER_CONFIG = {
+    latitude: 17.3850,
+    longitude: 78.4867,
+    timezone: "auto",
+    cacheKey: "weather_cache_v1",
+    cacheDuration: 3 * 60 * 60 * 1000
+};
+
+async function fetchWeatherSafe() {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${WEATHER_CONFIG.latitude}&longitude=${WEATHER_CONFIG.longitude}&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&current_weather=true&timezone=${WEATHER_CONFIG.timezone}`;
+
+    try {
+        const res = await fetch(url);
+        const data = await res.json();
+
+        localStorage.setItem(WEATHER_CONFIG.cacheKey, JSON.stringify({
+            data: data,
+            time: Date.now()
+        }));
+
+        return data;
+
+    } catch (error) {
+        const cache = JSON.parse(localStorage.getItem(WEATHER_CONFIG.cacheKey));
+        if (cache) return cache.data;
+        return null;
+    }
+}
+</script>
+
+<!-- TASK 3.2 -->
+<script>
+function processWeatherSafe(data) {
+    if (!data) return null;
+
+    const current = data.current_weather;
+    const daily = data.daily;
+
+    const todayMax = daily.temperature_2m_max[0];
+    const rainProb = daily.precipitation_probability_max[0];
+
+    let alerts = [];
+
+    if (todayMax > 40) alerts.push("🔥 Heat Stress Risk");
+    if (rainProb < 10) alerts.push("💧 Irrigation Required");
+    if (rainProb > 40) alerts.push("⛈️ Spray Not Recommended");
+
+    return {
+        temp: current.temperature,
+        wind: current.windspeed,
+        alerts: alerts
+    };
+}
+</script>
+
+<!-- TASK 3.3 -->
+<script>
+function updateWeatherUI(weather) {
+    if (!weather) return;
+
+    const tempEl = document.getElementById("weather-temp");
+    const windEl = document.getElementById("weather-wind");
+    const alertEl = document.getElementById("weather-alerts");
+
+    if (tempEl) tempEl.innerText = weather.temp + "°C";
+    if (windEl) windEl.innerText = weather.wind + " km/h";
+
+    if (alertEl) {
+        alertEl.innerHTML = weather.alerts
+            .map(a => `<div class="alert-badge">${a}</div>`)
+            .join("");
+    }
+}
+</script>
+
+<!-- TASK 3.4 -->
+<script>
+(async function initWeather() {
+    const raw = await fetchWeatherSafe();
+    const processed = processWeatherSafe(raw);
+    updateWeatherUI(processed);
+})();
+</script>
+
+<!-- ========================= -->
+<!-- 🌦️ TASK 3 END -->
+<!-- ========================= -->
 
 </body>
 </html>
