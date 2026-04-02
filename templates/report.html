@@ -1,280 +1,249 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Shet Mitra Report</title>
-    <style>
-        body { font-family: Arial; background: #f4f4f4; }
+<title>Shet Mitra</title>
 
-        .container {
-            width: 420px;
-            margin: auto;
-            background: white;
-            border-radius: 12px;
-            overflow: hidden;
-        }
+<style>
+body { font-family: Arial; background:#f4f4f4; }
 
-        .header {
-            background: #1b5e20;
-            color: white;
-            padding: 15px;
-            text-align: center;
-        }
+.container {
+    width:420px;
+    margin:auto;
+    background:white;
+    border-radius:12px;
+    overflow:hidden;
+}
 
-        .section { padding: 15px; }
+.header {
+    background:#1b5e20;
+    color:white;
+    padding:15px;
+    text-align:center;
+}
 
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 4px;
-        }
+.grid {
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:4px;
+    padding:15px;
+}
 
-        .box { height: 60px; border-radius: 5px; }
+.box { height:60px; border-radius:5px; }
 
-        .green { background: #2e7d32; }
-        .lightgreen { background: #66bb6a; }
-        .yellow { background: #fdd835; }
-        .orange { background: #fb8c00; }
-        .red { background: #e53935; }
+.green{background:#2e7d32;}
+.lightgreen{background:#66bb6a;}
+.yellow{background:#fdd835;}
+.orange{background:#fb8c00;}
+.red{background:#e53935;}
 
-        .legend {
-            background: #f1f1f1;
-            padding: 10px;
-            border-radius: 8px;
-            font-size: 12px;
-            margin-top: 10px;
-        }
+.legend {
+    background:#f1f1f1;
+    padding:10px;
+    margin:10px;
+    border-radius:8px;
+    font-size:12px;
+}
 
-        .weather-box {
-            background: linear-gradient(180deg, #a7c7e7, #90caf9);
-            padding: 12px;
-            border-radius: 10px;
-            margin-top: 15px;
-        }
+.weather-box {
+    background:#a7c7e7;
+    margin:10px;
+    padding:10px;
+    border-radius:10px;
+}
 
-        table {
-            width: 100%;
-            text-align: center;
-            font-size: 13px;
-        }
+table {
+    width:100%;
+    text-align:center;
+    font-size:13px;
+}
 
-        .green-text { color: green; font-weight: bold; }
-        .red-text { color: red; font-weight: bold; }
-        .orange-text { color: orange; font-weight: bold; }
+/* 🔥 STRONG VISUAL COLORS */
+.ok { color:green; font-weight:bold; }
+.no { color:red; font-weight:bold; }
+.warn { color:orange; font-weight:bold; }
 
-        .advisory-box {
-            background: #fff3e0;
-            padding: 14px;
-            margin-top: 12px;
-            border-radius: 10px;
-            font-weight: bold;
-            white-space: pre-line;
-            border-left: 6px solid #ff9800;
-        }
-    </style>
+/* 🔥 RAIN COLUMN HIGHLIGHT */
+.rain-col {
+    background:#ffe5e5;
+}
+
+/* 🔥 BIG ALERT BOX */
+.alert-box {
+    background:#ffebee;
+    border-left:6px solid red;
+    margin:10px;
+    padding:12px;
+    font-weight:bold;
+    white-space:pre-line;
+}
+
+</style>
 </head>
 
 <body>
 
 <div class="container">
 
-    <div class="header">
-        <h3>Shet Mitra</h3>
-        <p>Sahyadri Krushi Intelligence</p>
-        <p>{{date}}</p>
-    </div>
+<div class="header">
+<h3>Shet Mitra</h3>
+<p>{{date}}</p>
+</div>
 
-    <div class="section">
+<div class="grid">
+{% for row in grid %}
+{% for cell in row %}
+<div class="box {{cell}}"></div>
+{% endfor %}
+{% endfor %}
+</div>
 
-        <!-- GRID -->
-        <div class="grid">
-            {% for row in grid %}
-                {% for cell in row %}
-                    <div class="box {{cell}}"></div>
-                {% endfor %}
-            {% endfor %}
-        </div>
+<div class="legend">
+🟢 Healthy | 🟡 Monitor | 🟠 Moderate | 🔴 Critical
+</div>
 
-        <!-- LEGEND -->
-        <div class="legend">
-            🟢 Green → Healthy  
-            🟡 Yellow → Monitor  
-            🟠 Orange → Moderate  
-            🔴 Red → Critical
-        </div>
+<div class="weather-box">
+<h4>Weather (5-day)</h4>
 
-        <!-- WEATHER -->
-        <div class="weather-box">
-            <h4>Weather (5-day summary)</h4>
+<table>
+<tr>
+<th></th>
+<th id="d1"></th>
+<th id="d2"></th>
+<th id="d3"></th>
+<th id="d4"></th>
+<th id="d5"></th>
+</tr>
 
-            <table>
-                <tr>
-                    <th></th>
-                    <th id="d1"></th>
-                    <th id="d2"></th>
-                    <th id="d3"></th>
-                    <th id="d4"></th>
-                    <th id="d5"></th>
-                </tr>
+<tr>
+<td><b>Weather</b></td>
+<td id="w1"></td>
+<td id="w2"></td>
+<td id="w3"></td>
+<td id="w4"></td>
+<td id="w5"></td>
+</tr>
 
-                <tr>
-                    <td><b>Weather</b></td>
-                    <td id="w1"></td>
-                    <td id="w2"></td>
-                    <td id="w3"></td>
-                    <td id="w4"></td>
-                    <td id="w5"></td>
-                </tr>
+<tr>
+<td><b>Spray</b></td>
+<td id="s1"></td>
+<td id="s2"></td>
+<td id="s3"></td>
+<td id="s4"></td>
+<td id="s5"></td>
+</tr>
 
-                <tr>
-                    <td><b>Spray</b></td>
-                    <td id="s1"></td>
-                    <td id="s2"></td>
-                    <td id="s3"></td>
-                    <td id="s4"></td>
-                    <td id="s5"></td>
-                </tr>
+<tr>
+<td><b>Drying</b></td>
+<td id="dr1"></td>
+<td id="dr2"></td>
+<td id="dr3"></td>
+<td id="dr4"></td>
+<td id="dr5"></td>
+</tr>
+</table>
+</div>
 
-                <tr>
-                    <td><b>Drying</b></td>
-                    <td id="dr1"></td>
-                    <td id="dr2"></td>
-                    <td id="dr3"></td>
-                    <td id="dr4"></td>
-                    <td id="dr5"></td>
-                </tr>
-            </table>
-        </div>
-
-        <!-- INTELLIGENT ADVISORY -->
-        <div id="advisory-box" class="advisory-box"></div>
-
-    </div>
+<div id="alert" class="alert-box"></div>
 
 </div>
 
 <script>
 
 // LOCATION
-const LAT = 17.3850;
-const LON = 78.4867;
+const LAT=17.385;
+const LON=78.486;
 
-// FETCH WEATHER
-async function getWeather() {
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&daily=weathercode,temperature_2m_max&timezone=auto`;
-    const res = await fetch(url);
-    return await res.json();
+// FETCH
+async function getWeather(){
+const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&daily=weathercode,temperature_2m_max&timezone=auto`);
+return await r.json();
 }
 
 // WEATHER TEXT
-function weatherText(code) {
-    if (code < 3) return "☀️ Sunny";
-    if (code < 50) return "⛅ Cloudy";
-    if (code < 70) return "🌧 Rain";
-    return "⛈ Storm";
+function wt(c){
+if(c<3) return "☀️";
+if(c<50) return "⛅";
+if(c<70) return "🌧";
+return "⛈";
 }
 
-// SPRAY LOGIC
-function sprayLogic(code) {
-    if (code >= 60) return ["No", "red-text"];
-    if (code >= 45) return ["Monitor", "orange-text"];
-    return ["OK", "green-text"];
+// LOGIC
+function spray(c){
+if(c>=60) return ["NO","no"];
+if(c>=45) return ["Monitor","warn"];
+return ["OK","ok"];
 }
 
-// ✅ FIXED DRYING LOGIC (RAIN PRIORITY)
-function dryingLogic(temp, code) {
-
-    // rain cancels drying ALWAYS
-    if (code >= 60) return ["No Drying", "red-text"];
-
-    if (temp > 35) return ["Perfect", "green-text"];
-    if (temp > 25) return ["Slow", "orange-text"];
-
-    return ["Poor", ""];
+function drying(t,c){
+if(c>=60) return ["NO","no"]; // FIXED
+if(t>35) return ["Perfect","ok"];
+if(t>25) return ["Slow","warn"];
+return ["Poor",""];
 }
 
-// UPDATE UI
-function updateUI(data) {
+// UI
+function update(d){
 
-    const days = data.daily.time;
-    const codes = data.daily.weathercode;
-    const temps = data.daily.temperature_2m_max;
+let codes=d.daily.weathercode;
+let temps=d.daily.temperature_2m_max;
+let days=d.daily.time;
 
-    for (let i = 0; i < 5; i++) {
+for(let i=0;i<5;i++){
 
-        // DATE
-        document.getElementById("d"+(i+1)).innerText =
-            new Date(days[i]).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+document.getElementById("d"+(i+1)).innerText=
+new Date(days[i]).toLocaleDateString("en-GB",{day:"numeric",month:"short"});
 
-        // WEATHER
-        let wEl = document.getElementById("w"+(i+1));
-        wEl.innerText = weatherText(codes[i]);
+// weather
+let w=document.getElementById("w"+(i+1));
+w.innerText=wt(codes[i]);
 
-        // highlight rain visually
-        if (codes[i] >= 60) {
-            wEl.style.color = "red";
-            wEl.style.fontWeight = "bold";
-        }
-
-        // SPRAY
-        let [spray, sc] = sprayLogic(codes[i]);
-        let sEl = document.getElementById("s"+(i+1));
-        sEl.innerText = spray;
-        sEl.className = sc;
-
-        // DRYING
-        let [dry, dc] = dryingLogic(temps[i], codes[i]);
-        let dEl = document.getElementById("dr"+(i+1));
-        dEl.innerText = dry;
-        dEl.className = dc;
-    }
+// 🔥 highlight rain column
+if(codes[i]>=60){
+w.parentElement.children[i+1].classList.add("rain-col");
 }
 
-// INTELLIGENT ADVISORY
-function generateAdvisory(data) {
+// spray
+let [s,sc]=spray(codes[i]);
+let se=document.getElementById("s"+(i+1));
+se.innerText=s;
+se.className=sc;
 
-    const codes = data.daily.weathercode;
-    const temps = data.daily.temperature_2m_max;
-    const days = data.daily.time;
-
-    let rainDays = [];
-
-    for (let i = 0; i < 5; i++) {
-        if (codes[i] >= 60) rainDays.push(i);
-    }
-
-    let msg = "";
-
-    if (rainDays.length >= 2) {
-        msg += `🚨 CRITICAL ALERT\n`;
-        msg += `Rain from ${format(days[rainDays[0]])} → ${format(days[rainDays.at(-1)])}\n\n`;
-        msg += `❌ Stop spraying immediately\n`;
-        msg += `✅ Resume after rain window\n`;
-    }
-    else if (rainDays.length === 1) {
-        msg += `⚠ Rain expected on ${format(days[rainDays[0]])}\n`;
-        msg += `👉 Avoid spraying that day\n`;
-    }
-    else {
-        msg += `✅ SAFE CONDITIONS\n`;
-        msg += `👉 Ideal spray window available\n`;
-    }
-
-    if (Math.max(...temps) > 38) {
-        msg += `\n🔥 HIGH HEAT ALERT\nSpray early morning/evening`;
-    }
-
-    return msg;
+// drying
+let [dr,dc]=drying(temps[i],codes[i]);
+let dre=document.getElementById("dr"+(i+1));
+dre.innerText=dr;
+dre.className=dc;
+}
 }
 
-function format(d) {
-    return new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+// ALERT ENGINE
+function advisory(d){
+
+let codes=d.daily.weathercode;
+let days=d.daily.time;
+
+let rain=codes.map((c,i)=>c>=60?i:null).filter(x=>x!==null);
+
+if(rain.length>=2){
+return `🚨 HEAVY RAIN WINDOW\n${fmt(days[rain[0]])} → ${fmt(days[rain.at(-1)])}\n\nSTOP spraying\nResume after rain`;
+}
+
+if(rain.length==1){
+return `⚠ Rain on ${fmt(days[rain[0]])}\nAvoid spraying`;
+}
+
+return `✅ Safe spray window`;
+}
+
+function fmt(d){
+return new Date(d).toLocaleDateString("en-GB",{day:"numeric",month:"short"});
 }
 
 // INIT
-(async function () {
-    const data = await getWeather();
-    updateUI(data);
-    document.getElementById("advisory-box").innerText = generateAdvisory(data);
+(async()=>{
+let data=await getWeather();
+update(data);
+document.getElementById("alert").innerText=advisory(data);
 })();
 
 </script>
