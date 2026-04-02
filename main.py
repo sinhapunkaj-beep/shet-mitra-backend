@@ -20,19 +20,18 @@ def home():
 @app.get("/report-ui", response_class=HTMLResponse)
 def report_ui(request: Request):
 
-    # ✅ SAFE GRID (must match template)
+    # ✅ SIMPLE SAFE GRID (no complex objects)
     grid = [
-        ["green", "lightgreen", "green", "lightgreen"],
-        ["lightgreen", "orange", "yellow", "green"],
-        ["lightgreen", "red", "orange", "green"],
-        ["green", "yellow", "lightgreen", "green"]
+        ["green","lightgreen","green","lightgreen"],
+        ["lightgreen","orange","yellow","green"],
+        ["lightgreen","red","orange","green"],
+        ["green","yellow","lightgreen","green"]
     ]
 
-    return templates.TemplateResponse(
-        "report.html",
-        {
-            "request": request,   # REQUIRED by Jinja2
-            "grid": grid,
-            "date": "2 Apr 2026"
-        }
-    )
+    context = {
+        "request": request,
+        "grid": grid,
+        "date": "2 Apr 2026"
+    }
+
+    return templates.TemplateResponse("report.html", context)
