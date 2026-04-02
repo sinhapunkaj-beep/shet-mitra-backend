@@ -1,157 +1,185 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Shet Mitra v2</title>
+    <title>Shet Mitra</title>
 
-<style>
-body { font-family: Arial; background:#f4f4f4; }
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #000;
+            display: flex;
+            justify-content: center;
+        }
 
-.container {
-    width:420px;
-    margin:auto;
-    background:white;
-    border-radius:12px;
-    overflow:hidden;
-}
+        .container {
+            width: 420px;
+            background: #f5f5f5;
+            border-radius: 12px;
+            overflow: hidden;
+        }
 
-.header {
-    background:#1b5e20;
-    color:white;
-    padding:15px;
-    text-align:center;
-}
+        .header {
+            background: #1b5e20;
+            color: white;
+            padding: 12px;
+        }
 
-.grid {
-    display:grid;
-    grid-template-columns:repeat(4,1fr);
-    gap:4px;
-    padding:15px;
-}
+        .date {
+            text-align: center;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 6px;
+        }
 
-.box { height:60px; border-radius:5px; }
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
 
-.green{background:#2e7d32;}
-.lightgreen{background:#66bb6a;}
-.yellow{background:#fdd835;}
-.orange{background:#fb8c00;}
-.red{background:#e53935;}
+        .left {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
 
-.legend {
-    background:#f1f1f1;
-    padding:10px;
-    margin:10px;
-    border-radius:8px;
-    font-size:12px;
-}
+        .logo { width: 48px; height: 48px; }
 
-.weather-box {
-    background:#a7c7e7;
-    margin:10px;
-    padding:10px;
-    border-radius:10px;
-}
+        .title { font-size: 16px; font-weight: bold; }
+        .sub { font-size: 12px; }
 
-table {
-    width:100%;
-    text-align:center;
-    font-size:13px;
-}
+        .star {
+            background: #ffca28;
+            color: #000;
+            font-weight: bold;
+            font-size: 11px;
+            padding: 6px 10px;
+            border-radius: 20px;
+            text-align: center;
+        }
 
-.ok { color:green; font-weight:bold; }
-.no { color:red; font-weight:bold; }
-.warn { color:orange; font-weight:bold; }
+        .section {
+            padding: 12px;
+        }
 
-.rain-col { background:#ffe5e5; }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 4px;
+            background: #ddd;
+            padding: 6px;
+            border-radius: 10px;
+        }
 
-.alert-box {
-    background:#ffebee;
-    border-left:6px solid red;
-    margin:10px;
-    padding:12px;
-    font-weight:bold;
-    white-space:pre-line;
-}
-</style>
+        .cell { height: 60px; border-radius: 4px; }
+        .g { background:#2e7d32; }
+        .lg { background:#66bb6a; }
+        .y { background:#fdd835; }
+        .o { background:#fb8c00; }
+        .r { background:#e53935; }
+
+        .weather {
+            background:#bbdefb;
+            padding:12px;
+            border-left:6px solid #1565c0;
+            border-radius:10px;
+        }
+
+        .alert {
+            background:#ffebee;
+            border-left:6px solid red;
+            padding:12px;
+            margin-top:10px;
+            border-radius:10px;
+            font-weight:bold;
+        }
+
+        table {
+            width:100%;
+            text-align:center;
+            font-size:13px;
+        }
+
+        .green { color:green; font-weight:bold; }
+        .red { color:red; font-weight:bold; }
+        .orange { color:orange; font-weight:bold; }
+
+    </style>
 </head>
 
 <body>
-
 <div class="container">
 
-<div class="header">
-<h3>Shet Mitra v2</h3>
-<p>2 Apr 2026</p>
-</div>
+    <div class="header">
+        <div class="date">2 Apr 2026</div>
 
-<div class="grid">
-<div class="box green"></div>
-<div class="box lightgreen"></div>
-<div class="box green"></div>
-<div class="box lightgreen"></div>
+        <div class="header-row">
+            <div class="left">
+                <img src="/static/logo.svg" class="logo">
+                <div>
+                    <div class="title">Shet Mitra</div>
+                    <div class="sub">Sahyadri Krushi Intelligence</div>
+                </div>
+            </div>
 
-<div class="box lightgreen"></div>
-<div class="box orange"></div>
-<div class="box yellow"></div>
-<div class="box green"></div>
+            <div class="star">
+                ⭐ Upcoming Feature<br>
+                Disease Identification
+            </div>
+        </div>
+    </div>
 
-<div class="box lightgreen"></div>
-<div class="box red"></div>
-<div class="box orange"></div>
-<div class="box green"></div>
+    <div class="section">
+        <div class="grid">
+            <div class="cell g"></div><div class="cell lg"></div><div class="cell g"></div><div class="cell lg"></div>
+            <div class="cell lg"></div><div class="cell o"></div><div class="cell y"></div><div class="cell g"></div>
+            <div class="cell lg"></div><div class="cell r"></div><div class="cell o"></div><div class="cell g"></div>
+            <div class="cell g"></div><div class="cell y"></div><div class="cell lg"></div><div class="cell g"></div>
+        </div>
+    </div>
 
-<div class="box green"></div>
-<div class="box yellow"></div>
-<div class="box lightgreen"></div>
-<div class="box green"></div>
-</div>
+    <div class="section">
+        <div class="weather">
+            <b>Weather (5-day)</b>
 
-<div class="legend">
-🟢 Healthy | 🟡 Monitor | 🟠 Moderate | 🔴 Critical
-</div>
+            <table>
+                <tr>
+                    <th></th><th>2 Apr</th><th>3 Apr</th><th>4 Apr</th><th>5 Apr</th><th>6 Apr</th>
+                </tr>
 
-<div class="weather-box">
-<h4>Weather (5-day)</h4>
+                <tr>
+                    <td>Weather</td>
+                    <td>☀️</td><td>⛅</td><td>🌧</td><td>🌧</td><td>☀️</td>
+                </tr>
 
-<table>
-<tr>
-<th></th><th>2 Apr</th><th>3 Apr</th><th>4 Apr</th><th>5 Apr</th><th>6 Apr</th>
-</tr>
+                <tr>
+                    <td>Spray</td>
+                    <td class="green">OK</td>
+                    <td class="green">OK</td>
+                    <td class="red">NO</td>
+                    <td class="red">NO</td>
+                    <td class="orange">Monitor</td>
+                </tr>
 
-<tr>
-<td><b>Weather</b></td>
-<td>☀️</td><td>⛅</td><td>🌧</td><td>🌧</td><td>☀️</td>
-</tr>
+                <tr>
+                    <td>Drying</td>
+                    <td class="green">Perfect</td>
+                    <td class="orange">Slow</td>
+                    <td class="red">NO</td>
+                    <td class="red">NO</td>
+                    <td>No Drying</td>
+                </tr>
+            </table>
+        </div>
 
-<tr>
-<td><b>Spray</b></td>
-<td class="ok">OK</td>
-<td class="ok">OK</td>
-<td class="no">NO</td>
-<td class="no">NO</td>
-<td class="ok">OK</td>
-</tr>
-
-<tr>
-<td><b>Drying</b></td>
-<td class="ok">Perfect</td>
-<td class="ok">Perfect</td>
-<td class="no">NO</td>
-<td class="no">NO</td>
-<td class="ok">Perfect</td>
-</tr>
-
-</table>
-</div>
-
-<div class="alert-box">
-🚨 HEAVY RAIN WINDOW  
-4 Apr → 5 Apr  
-
-STOP spraying  
-Resume after rain
-</div>
+        <div class="alert">
+            🚨 HEAVY RAIN WINDOW<br>
+            4 Apr → 5 Apr<br><br>
+            STOP spraying<br>
+            Resume after rain
+        </div>
+    </div>
 
 </div>
-
 </body>
 </html>
