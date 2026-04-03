@@ -5,7 +5,7 @@
 
 <style>
 body {
-    font-family: Arial;
+    font-family: Arial, Helvetica, sans-serif;
     background: #000;
     display: flex;
     justify-content: center;
@@ -13,20 +13,22 @@ body {
 
 .container {
     width: 420px;
-    background: #f5f5f5;
-    border-radius: 12px;
+    background: #f2f2f2;
+    border-radius: 14px;
     overflow: hidden;
 }
 
+/* HEADER */
 .header {
     background: #1b5e20;
     color: white;
-    padding: 12px;
+    padding: 10px 12px;
 }
 
 .date {
     text-align: center;
     font-weight: bold;
+    font-size: 13px;
     margin-bottom: 6px;
 }
 
@@ -42,80 +44,112 @@ body {
     align-items: center;
 }
 
-.logo { width: 48px; }
+.logo { width: 46px; }
 
-.title { font-size: 16px; font-weight: bold; }
-.sub { font-size: 12px; }
+.title { font-size: 15px; font-weight: bold; }
+.sub { font-size: 11px; }
 
-.star {
+.badge {
     background: #ffca28;
+    color: black;
     padding: 6px 10px;
-    border-radius: 20px;
+    border-radius: 18px;
     font-size: 11px;
     font-weight: bold;
+    text-align: center;
 }
 
-.section { padding: 12px; }
+/* GRID */
+.section { padding: 10px 12px; }
 
 .grid {
     display: grid;
     grid-template-columns: repeat(4,1fr);
-    gap: 4px;
+    gap: 5px;
     background: #ddd;
     padding: 6px;
     border-radius: 10px;
 }
 
-.cell { height: 60px; border-radius: 4px; }
+.cell { height: 58px; border-radius: 4px; }
 
 .g{background:#2e7d32;}
 .lg{background:#66bb6a;}
-.y{background:#fdd835;}
-.o{background:#fb8c00;}
+.y{background:#f4d03f;}
+.o{background:#f57c00;}
 .r{background:#e53935;}
 
+/* LEGEND */
 .legend {
-    background: #eee;
+    background: #e8e8e8;
+    margin: 0 12px;
     padding: 10px;
     border-radius: 10px;
     font-size: 12px;
+    line-height: 1.6;
 }
 
+/* WEATHER */
 .weather {
-    background:#bbdefb;
-    padding:12px;
-    border-left:6px solid #1565c0;
-    border-radius:10px;
+    background:#a7c7e7;
+    margin: 10px 12px;
+    padding: 10px;
+    border-radius: 12px;
+    border-left: 5px solid #1565c0;
 }
 
-.alert {
-    background:#ffebee;
-    border-left:6px solid red;
-    padding:12px;
-    margin-top:10px;
-    border-radius:10px;
-    font-weight:bold;
-}
-
-.market {
-    background:#c8e6c9;
-    border-left:6px solid #2e7d32;
-    padding:12px;
-    margin-top:10px;
-    border-radius:10px;
-    font-size:13px;
+.weather-title {
+    text-align: center;
+    font-weight: bold;
+    margin-bottom: 6px;
+    font-size: 13px;
 }
 
 table {
     width:100%;
     text-align:center;
-    font-size:13px;
+    font-size:12px;
+    border-collapse: collapse;
 }
+
+th { padding-bottom: 4px; }
+td { padding: 2px 0; }
 
 .green { color:green; font-weight:bold; }
 .red { color:red; font-weight:bold; }
-.orange { color:orange; font-weight:bold; }
+.orange { color:#f57c00; font-weight:bold; }
 
+/* ALERT */
+.alert {
+    background:#f3dede;
+    border-left:6px solid red;
+    margin: 10px 12px;
+    padding:10px;
+    border-radius:10px;
+    font-weight:bold;
+    font-size:13px;
+}
+
+/* MARKET */
+.market {
+    background:#b7d7b7;
+    border-left:6px solid #1b5e20;
+    margin: 10px 12px;
+    padding:10px;
+    border-radius:10px;
+    font-size:12px;
+}
+
+.market-title {
+    font-weight:bold;
+    margin-bottom:4px;
+}
+
+.market table {
+    margin-top:6px;
+}
+
+/* FOOTER */
 .footer {
     text-align:center;
     padding:10px;
@@ -128,6 +162,7 @@ table {
 
 <div class="container">
 
+<!-- HEADER -->
 <div class="header">
 <div class="date">2 Apr 2026</div>
 
@@ -140,10 +175,14 @@ table {
 </div>
 </div>
 
-<div class="star">⭐ Upcoming Feature<br>Disease Identification</div>
+<div class="badge">
+⭐ Upcoming Feature<br>
+Disease Identification
+</div>
 </div>
 </div>
 
+<!-- GRID -->
 <div class="section">
 <div class="grid">
 <div class="cell g"></div><div class="cell lg"></div><div class="cell g"></div><div class="cell lg"></div>
@@ -153,15 +192,17 @@ table {
 </div>
 </div>
 
-<div class="section legend">
-🟢 Healthy → Continue<br>
-🟡 Monitor → Watch closely<br>
-🟠 Moderate → Take action<br>
-🔴 Severe → Immediate action
+<!-- LEGEND -->
+<div class="legend">
+🟢 Green → Healthy → Continue current schedule<br>
+🟡 Yellow → Mild → Monitor closely<br>
+🟠 Orange → Moderate → Inspect & treat<br>
+🔴 Red → Severe → Immediate action required
 </div>
 
-<div class="section weather">
-<b>Weather (5-day)</b>
+<!-- WEATHER -->
+<div class="weather">
+<div class="weather-title">Weather (5-day summary)</div>
 
 <table>
 <tr>
@@ -177,8 +218,8 @@ table {
 <td>Spray</td>
 <td class="green">OK</td>
 <td class="green">OK</td>
-<td class="red">NO</td>
-<td class="red">NO</td>
+<td class="red">No</td>
+<td class="red">No</td>
 <td class="orange">Monitor</td>
 </tr>
 
@@ -186,27 +227,37 @@ table {
 <td>Drying</td>
 <td class="green">Perfect</td>
 <td class="orange">Slow</td>
-<td class="red">NO</td>
-<td class="red">NO</td>
-<td>No Drying</td>
+<td class="red">No</td>
+<td class="red">No</td>
+<td>No</td>
 </tr>
 </table>
 </div>
 
-<div class="section alert">
+<!-- ALERT -->
+<div class="alert">
 🚨 HEAVY RAIN WINDOW<br>
 4 Apr → 5 Apr<br><br>
 STOP spraying<br>
 Resume after rain
 </div>
 
-<div class="section market">
-<b>Pomegranate (Sangli APMC)</b><br>
-Min ₹5000 | Modal ₹7000 | Max ₹8500<br>
-Arrival: 80 / 120 / 60<br><br>
+<!-- MARKET -->
+<div class="market">
+<div class="market-title">Pomegranate (Sangli APMC)</div>
+Updated: 2 Apr 2026, 11:30 AM
+
+<table>
+<tr><th></th><th>Min</th><th>Modal</th><th>Max</th></tr>
+<tr><td>Price</td><td>₹5000</td><td>₹7000</td><td>₹8500</td></tr>
+<tr><td>Arrival</td><td>80</td><td>120</td><td>60</td></tr>
+</table>
+
+<br>
 Advice: Hold premium, sell mid-grade
 </div>
 
+<!-- FOOTER -->
 <div class="footer">
 Shet Mitra 🌿
 </div>
