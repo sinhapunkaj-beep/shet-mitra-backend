@@ -1,0 +1,380 @@
+<UserControl x:Class="ShetMitraAdmin.Views.BeltIntelligenceView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:ShetMitraAdmin.ViewModels"
+             xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
+             d:DataContext="{d:DesignInstance Type=vm:BeltIntelligenceViewModel, IsDesignTimeCreatable=True}"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             Background="{StaticResource SurfaceBg}">
+    <UserControl.DataContext>
+        <vm:BeltIntelligenceViewModel />
+    </UserControl.DataContext>
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <DockPanel Grid.Row="0" LastChildFill="False" Margin="8,8,8,16">
+            <TextBlock DockPanel.Dock="Left"
+                       Text="Belt Intelligence"
+                       FontSize="26"
+                       FontWeight="Bold" />
+            <Button DockPanel.Dock="Right"
+                    Content="Refresh"
+                    Command="{Binding RefreshCommand}"
+                    Padding="14,6"
+                    Background="{StaticResource BrandPrimary}"
+                    Foreground="White"
+                    BorderThickness="0" />
+        </DockPanel>
+
+        <TabControl Grid.Row="1" Background="Transparent" BorderThickness="0">
+
+        <!-- TASGAON BELT TAB (existing dry-grapes belt) -->
+        <TabItem Header="Tasgaon (Grapes)">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="8">
+        <StackPanel>
+            <!-- TOP CARDS -->
+            <UniformGrid Columns="3" Rows="2">
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="Total grape fields" Style="{StaticResource CardTitle}" />
+                        <TextBlock Text="{Binding TotalGrapeFields}" Style="{StaticResource CardValue}" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="Total belt area (acres)" Style="{StaticResource CardTitle}" />
+                        <TextBlock Text="{Binding TotalBeltAcres}" Style="{StaticResource CardValue}" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="This week arrivals (MT)" Style="{StaticResource CardTitle}" />
+                        <TextBlock Text="{Binding ThisWeekArrivalsMt, StringFormat={}{0:0}}" Style="{StaticResource CardValue}" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="Next week forecast (MT)" Style="{StaticResource CardTitle}" />
+                        <TextBlock Text="{Binding NextWeekArrivalsMt, StringFormat={}{0:0}}" Style="{StaticResource CardValue}" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="Belt health (good)" Style="{StaticResource CardTitle}" />
+                        <TextBlock Text="{Binding BeltHealthGoodPct, StringFormat={}{0:0}%}" Style="{StaticResource CardValue}" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource Card}"
+                        Background="{Binding PricePressure, Converter={StaticResource PricePressureToBrushConverter}}">
+                    <StackPanel>
+                        <TextBlock Text="Price pressure" Foreground="White" FontWeight="SemiBold" FontSize="13" />
+                        <TextBlock Text="{Binding PricePressure}"
+                                   Foreground="White"
+                                   FontSize="26"
+                                   FontWeight="Bold"
+                                   Margin="0,4,0,0" />
+                    </StackPanel>
+                </Border>
+            </UniformGrid>
+
+            <!-- HARVEST VOLUME FORECAST -->
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="4-week harvest volume forecast"
+                               FontSize="16"
+                               FontWeight="SemiBold"
+                               Margin="0,0,0,8" />
+                    <lvc:CartesianChart Height="280"
+                                        Series="{Binding ForecastSeries}"
+                                        XAxes="{Binding ForecastXAxes}"
+                                        YAxes="{Binding ForecastYAxes}" />
+                </StackPanel>
+            </Border>
+
+            <!-- BELT HEALTH DISTRIBUTION -->
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="Belt health distribution per week"
+                               FontSize="16"
+                               FontWeight="SemiBold"
+                               Margin="0,0,0,8" />
+                    <lvc:CartesianChart Height="280"
+                                        Series="{Binding HealthDistributionSeries}"
+                                        XAxes="{Binding HealthXAxes}"
+                                        YAxes="{Binding HealthYAxes}" />
+                </StackPanel>
+            </Border>
+
+            <!-- HISTORICAL COMPARISON -->
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="Historical comparison"
+                               FontSize="16"
+                               FontWeight="SemiBold"
+                               Margin="0,0,0,8" />
+                    <DataGrid ItemsSource="{Binding HistoricalComparison}"
+                              AutoGenerateColumns="False"
+                              CanUserAddRows="False"
+                              HeadersVisibility="Column"
+                              IsReadOnly="True"
+                              GridLinesVisibility="None">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Season"        Binding="{Binding Season}"            Width="*" />
+                            <DataGridTextColumn Header="Peak week"     Binding="{Binding PeakWeek}"          Width="*" />
+                            <DataGridTextColumn Header="Peak vol (MT)" Binding="{Binding PeakVolumeMt}"      Width="*" />
+                            <DataGridTextColumn Header="Avg price /kg" Binding="{Binding AvgPriceModalKg}"   Width="*" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </StackPanel>
+            </Border>
+
+            <!-- MISMATCH REPORT -->
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="Mismatch report"
+                               FontSize="16"
+                               FontWeight="SemiBold"
+                               Margin="0,0,0,8" />
+                    <DataGrid ItemsSource="{Binding MismatchReport}"
+                              AutoGenerateColumns="False"
+                              CanUserAddRows="False"
+                              HeadersVisibility="Column"
+                              IsReadOnly="True"
+                              GridLinesVisibility="None">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Farmer"        Binding="{Binding FarmerName}"                            Width="*" />
+                            <DataGridTextColumn Header="Registered"    Binding="{Binding RegisteredCrop}"                        Width="*" />
+                            <DataGridTextColumn Header="AMED detected" Binding="{Binding AmedDetectedCrop}"                      Width="*" />
+                            <DataGridTextColumn Header="Diff %"        Binding="{Binding AreaDiffPct, StringFormat={}{0:0.0}}"  Width="*" />
+                            <DataGridTextColumn Header="Action"        Binding="{Binding RecommendedAction}"                     Width="2*" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </StackPanel>
+            </Border>
+
+            <!-- DATA REFRESH INFO -->
+            <Border Style="{StaticResource Card}">
+                <DockPanel LastChildFill="False">
+                    <TextBlock DockPanel.Dock="Left">
+                        <Run Text="AMED last refreshed: " Foreground="#666666" />
+                        <Run Text="{Binding LastRefreshed}" FontWeight="SemiBold" />
+                        <Run Text="    Next refresh: " Foreground="#666666" />
+                        <Run Text="{Binding NextRefresh}" FontWeight="SemiBold" />
+                    </TextBlock>
+                    <Button DockPanel.Dock="Right"
+                            Content="Manual refresh"
+                            Command="{Binding RefreshCommand}"
+                            Padding="14,6"
+                            Background="{StaticResource BrandPrimary}"
+                            Foreground="White"
+                            BorderThickness="0" />
+                </DockPanel>
+            </Border>
+        </StackPanel>
+        </ScrollViewer>
+        </TabItem>
+
+        <!-- KONKAN BELT (ALPHONSO) — Mango Agent 8 §9.4 -->
+        <TabItem Header="Konkan Belt (Alphonso)" DataContext="{Binding KonkanTab}">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="8">
+                <StackPanel>
+                    <UniformGrid Columns="4" Rows="1">
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="Total mango fields" Style="{StaticResource CardTitle}" />
+                                <TextBlock Text="{Binding TotalFieldsDetected}" Style="{StaticResource CardValue}" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="Total area (acres)" Style="{StaticResource CardTitle}" />
+                                <TextBlock Text="{Binding TotalAreaAcres, StringFormat={}{0:0}}" Style="{StaticResource CardValue}" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="This week (MT)" Style="{StaticResource CardTitle}" />
+                                <TextBlock Text="{Binding ThisWeekVolumeMt, StringFormat={}{0:0}}" Style="{StaticResource CardValue}" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource Card}"
+                                Background="{Binding BearingYear, Converter={StaticResource BearingToBrushConverter}}">
+                            <StackPanel>
+                                <TextBlock Text="Bearing year" FontWeight="SemiBold" FontSize="13" Foreground="#1B1B1B" />
+                                <TextBlock Text="{Binding BearingYear}"
+                                           FontSize="26"
+                                           FontWeight="Bold"
+                                           Foreground="#1B1B1B"
+                                           Margin="0,4,0,0" />
+                            </StackPanel>
+                        </Border>
+                    </UniformGrid>
+
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Text="Volume forecast"
+                                       FontSize="16"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,8" />
+                            <lvc:CartesianChart Height="260"
+                                                Series="{Binding ForecastSeries}"
+                                                XAxes="{Binding ForecastXAxes}"
+                                                YAxes="{Binding ForecastYAxes}" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Text="Health distribution"
+                                       FontSize="16"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,8" />
+                            <lvc:CartesianChart Height="260"
+                                                Series="{Binding HealthDistributionSeries}"
+                                                XAxes="{Binding HealthXAxes}"
+                                                YAxes="{Binding HealthYAxes}" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+
+        <!-- NASHIK BELT (KESAR) -->
+        <TabItem Header="Nashik Belt (Kesar)" DataContext="{Binding NashikTab}">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="8">
+                <StackPanel>
+                    <UniformGrid Columns="4" Rows="1">
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="Total mango fields" Style="{StaticResource CardTitle}" />
+                                <TextBlock Text="{Binding TotalFieldsDetected}" Style="{StaticResource CardValue}" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="Total area (acres)" Style="{StaticResource CardTitle}" />
+                                <TextBlock Text="{Binding TotalAreaAcres, StringFormat={}{0:0}}" Style="{StaticResource CardValue}" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="This week (MT)" Style="{StaticResource CardTitle}" />
+                                <TextBlock Text="{Binding ThisWeekVolumeMt, StringFormat={}{0:0}}" Style="{StaticResource CardValue}" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource Card}"
+                                Background="{Binding BearingYear, Converter={StaticResource BearingToBrushConverter}}">
+                            <StackPanel>
+                                <TextBlock Text="Bearing year" FontWeight="SemiBold" FontSize="13" Foreground="#1B1B1B" />
+                                <TextBlock Text="{Binding BearingYear}"
+                                           FontSize="26"
+                                           FontWeight="Bold"
+                                           Foreground="#1B1B1B"
+                                           Margin="0,4,0,0" />
+                            </StackPanel>
+                        </Border>
+                    </UniformGrid>
+
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Text="Volume forecast"
+                                       FontSize="16"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,8" />
+                            <lvc:CartesianChart Height="260"
+                                                Series="{Binding ForecastSeries}"
+                                                XAxes="{Binding ForecastXAxes}"
+                                                YAxes="{Binding ForecastYAxes}" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Text="Health distribution"
+                                       FontSize="16"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,8" />
+                            <lvc:CartesianChart Height="260"
+                                                Series="{Binding HealthDistributionSeries}"
+                                                XAxes="{Binding HealthXAxes}"
+                                                YAxes="{Binding HealthYAxes}" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+
+        <!-- VIDARBHA BELT (DASHERI) -->
+        <TabItem Header="Vidarbha Belt (Dasheri)" DataContext="{Binding VidarbhaTab}">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="8">
+                <StackPanel>
+                    <UniformGrid Columns="4" Rows="1">
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="Total mango fields" Style="{StaticResource CardTitle}" />
+                                <TextBlock Text="{Binding TotalFieldsDetected}" Style="{StaticResource CardValue}" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="Total area (acres)" Style="{StaticResource CardTitle}" />
+                                <TextBlock Text="{Binding TotalAreaAcres, StringFormat={}{0:0}}" Style="{StaticResource CardValue}" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="This week (MT)" Style="{StaticResource CardTitle}" />
+                                <TextBlock Text="{Binding ThisWeekVolumeMt, StringFormat={}{0:0}}" Style="{StaticResource CardValue}" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource Card}"
+                                Background="{Binding BearingYear, Converter={StaticResource BearingToBrushConverter}}">
+                            <StackPanel>
+                                <TextBlock Text="Bearing year" FontWeight="SemiBold" FontSize="13" Foreground="#1B1B1B" />
+                                <TextBlock Text="{Binding BearingYear}"
+                                           FontSize="26"
+                                           FontWeight="Bold"
+                                           Foreground="#1B1B1B"
+                                           Margin="0,4,0,0" />
+                            </StackPanel>
+                        </Border>
+                    </UniformGrid>
+
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Text="Volume forecast"
+                                       FontSize="16"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,8" />
+                            <lvc:CartesianChart Height="260"
+                                                Series="{Binding ForecastSeries}"
+                                                XAxes="{Binding ForecastXAxes}"
+                                                YAxes="{Binding ForecastYAxes}" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Text="Health distribution"
+                                       FontSize="16"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,8" />
+                            <lvc:CartesianChart Height="260"
+                                                Series="{Binding HealthDistributionSeries}"
+                                                XAxes="{Binding HealthXAxes}"
+                                                YAxes="{Binding HealthYAxes}" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+
+        </TabControl>
+    </Grid>
+</UserControl>

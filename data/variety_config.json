@@ -1,0 +1,160 @@
+{
+  "Grapes": {
+    "Thompson Seedless": {
+      "brix_target_min": 18,
+      "brix_target_max": 22,
+      "maturity_days": 135,
+      "spray_schedule": "standard_grape_thompson",
+      "mandi_grade_premium": true,
+      "price_premium_pct": 15
+    },
+    "Sharad Seedless": {
+      "brix_target_min": 20,
+      "brix_target_max": 24,
+      "maturity_days": 145,
+      "spray_schedule": "standard_grape_sharad",
+      "mandi_grade_premium": false,
+      "price_premium_pct": 0
+    },
+    "Sonaka": {
+      "brix_target_min": 17,
+      "brix_target_max": 21,
+      "maturity_days": 130,
+      "spray_schedule": "standard_grape_sonaka",
+      "mandi_grade_premium": true,
+      "price_premium_pct": 10
+    },
+    "default": {
+      "brix_target_min": 16,
+      "brix_target_max": 20,
+      "maturity_days": 135,
+      "spray_schedule": "standard_grape_generic",
+      "mandi_grade_premium": false,
+      "price_premium_pct": 0
+    }
+  },
+  "Pomegranate": {
+    "Bhagwa": {
+      "brix_target_min": 14,
+      "brix_target_max": 17,
+      "maturity_days": 150,
+      "spray_schedule": "standard_pom_bhagwa",
+      "mandi_grade_premium": true,
+      "price_premium_pct": 20
+    },
+    "Ganesh": {
+      "brix_target_min": 12,
+      "brix_target_max": 16,
+      "maturity_days": 160,
+      "spray_schedule": "standard_pom_ganesh",
+      "mandi_grade_premium": false,
+      "price_premium_pct": 0
+    },
+    "default": {
+      "brix_target_min": 13,
+      "brix_target_max": 16,
+      "maturity_days": 155,
+      "spray_schedule": "standard_pom_generic",
+      "mandi_grade_premium": false,
+      "price_premium_pct": 0
+    }
+  },
+  "Mango": {
+    "Alphonso": {
+      "harvest_months": [4, 5],
+      "maturity_days_from_fruit_set": 110,
+      "brix_target_min": 20,
+      "brix_target_max": 24,
+      "weight_target_grams": 250,
+      "export_quality": true,
+      "gi_tagged": true,
+      "mandi_primary": "Vashi APMC",
+      "mandi_secondary": "Ratnagiri APMC",
+      "price_premium_pct": 60,
+      "spray_schedule": "standard_mango_alphonso",
+      "alternate_bearing": true,
+      "language_hint": "Konkani",
+      "mandi_grade_premium": true
+    },
+    "Kesar": {
+      "harvest_months": [5, 6],
+      "maturity_days_from_fruit_set": 120,
+      "brix_target_min": 18,
+      "brix_target_max": 22,
+      "weight_target_grams": 280,
+      "export_quality": true,
+      "gi_tagged": true,
+      "mandi_primary": "Junagadh APMC",
+      "mandi_secondary": "Ahmedabad APMC",
+      "price_premium_pct": 40,
+      "spray_schedule": "standard_mango_kesar",
+      "alternate_bearing": true,
+      "language_hint": "Marathi",
+      "mandi_grade_premium": true
+    },
+    "Dasheri": {
+      "harvest_months": [6, 7],
+      "maturity_days_from_fruit_set": 130,
+      "brix_target_min": 16,
+      "brix_target_max": 20,
+      "weight_target_grams": 220,
+      "export_quality": false,
+      "gi_tagged": true,
+      "mandi_primary": "Lucknow APMC",
+      "mandi_secondary": "Malihabad APMC",
+      "price_premium_pct": 20,
+      "spray_schedule": "standard_mango_dasheri",
+      "alternate_bearing": true,
+      "language_hint": "Marathi",
+      "mandi_grade_premium": true
+    },
+    "Totapuri": {
+      "harvest_months": [5, 6, 7],
+      "maturity_days_from_fruit_set": 140,
+      "brix_target_min": 14,
+      "brix_target_max": 18,
+      "weight_target_grams": 350,
+      "export_quality": false,
+      "gi_tagged": false,
+      "mandi_primary": "Chittoor APMC",
+      "mandi_secondary": "Krishnagiri APMC",
+      "price_premium_pct": 0,
+      "spray_schedule": "standard_mango_totapuri",
+      "alternate_bearing": false,
+      "language_hint": "Marathi",
+      "mandi_grade_premium": false
+    },
+    "Banganapalli": {
+      "harvest_months": [4, 5, 6],
+      "maturity_days_from_fruit_set": 125,
+      "brix_target_min": 17,
+      "brix_target_max": 21,
+      "weight_target_grams": 350,
+      "export_quality": true,
+      "gi_tagged": true,
+      "mandi_primary": "Kurnool APMC",
+      "mandi_secondary": "Nunna APMC",
+      "price_premium_pct": 25,
+      "spray_schedule": "standard_mango_banganapalli",
+      "alternate_bearing": true,
+      "language_hint": "Marathi",
+      "mandi_grade_premium": true
+    },
+    "default": {
+      "harvest_months": [5, 6],
+      "maturity_days_from_fruit_set": 120,
+      "brix_target_min": 14,
+      "brix_target_max": 20,
+      "weight_target_grams": 250,
+      "export_quality": false,
+      "gi_tagged": false,
+      "mandi_primary": "Vashi APMC",
+      "mandi_secondary": "Local APMC",
+      "price_premium_pct": 0,
+      "spray_schedule": "standard_mango_generic",
+      "alternate_bearing": true,
+      "language_hint": "Marathi",
+      "mandi_grade_premium": false
+    }
+  }
+}

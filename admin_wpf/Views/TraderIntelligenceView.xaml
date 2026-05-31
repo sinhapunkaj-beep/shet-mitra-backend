@@ -1,0 +1,449 @@
+<UserControl x:Class="ShetMitraAdmin.Views.TraderIntelligenceView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:ShetMitraAdmin.ViewModels"
+             xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             d:DataContext="{d:DesignInstance Type=vm:TraderIntelligenceViewModel, IsDesignTimeCreatable=True}"
+             mc:Ignorable="d"
+             Background="{StaticResource SurfaceBg}">
+    <UserControl.DataContext>
+        <vm:TraderIntelligenceViewModel />
+    </UserControl.DataContext>
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- TITLE + REFRESH -->
+        <DockPanel Grid.Row="0" LastChildFill="False" Margin="8,8,8,12">
+            <TextBlock DockPanel.Dock="Left"
+                       Text="Trader Intelligence"
+                       FontSize="26"
+                       FontWeight="Bold" />
+            <Button DockPanel.Dock="Right"
+                    Content="Refresh"
+                    Command="{Binding RefreshCommand}"
+                    Padding="14,6"
+                    Background="{StaticResource BrandPrimary}"
+                    Foreground="White"
+                    BorderThickness="0" />
+        </DockPanel>
+
+        <!-- KPI HEADER (always visible) -->
+        <UniformGrid Grid.Row="1" Columns="4" Rows="1" Margin="0,0,0,12">
+            <Border Style="{StaticResource Card}">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="8"
+                                      ShadowDepth="0"
+                                      Opacity="0.10" />
+                </Border.Effect>
+                <StackPanel>
+                    <TextBlock Text="Total Traders" Style="{StaticResource CardTitle}" />
+                    <TextBlock Text="{Binding Analytics.TotalTraders}"
+                               Style="{StaticResource CardValue}" />
+                </StackPanel>
+            </Border>
+            <Border Style="{StaticResource Card}">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="8"
+                                      ShadowDepth="0"
+                                      Opacity="0.10" />
+                </Border.Effect>
+                <StackPanel>
+                    <TextBlock Text="Active Subscribers" Style="{StaticResource CardTitle}" />
+                    <TextBlock Text="{Binding Analytics.ActiveSubscribers}"
+                               Style="{StaticResource CardValue}"
+                               Foreground="{StaticResource Success}" />
+                </StackPanel>
+            </Border>
+            <Border Style="{StaticResource Card}">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="8"
+                                      ShadowDepth="0"
+                                      Opacity="0.10" />
+                </Border.Effect>
+                <StackPanel>
+                    <TextBlock Text="MRR" Style="{StaticResource CardTitle}" />
+                    <TextBlock Text="{Binding Analytics.Mrr, StringFormat=₹{0:N0}}"
+                               Style="{StaticResource CardValue}"
+                               Foreground="{StaticResource BrandAccent}" />
+                </StackPanel>
+            </Border>
+            <Border Style="{StaticResource Card}">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="8"
+                                      ShadowDepth="0"
+                                      Opacity="0.10" />
+                </Border.Effect>
+                <StackPanel>
+                    <TextBlock Text="This Month Revenue" Style="{StaticResource CardTitle}" />
+                    <TextBlock Text="{Binding Analytics.ThisMonthRevenue, StringFormat=₹{0:N0}}"
+                               Style="{StaticResource CardValue}"
+                               Foreground="#1976D2" />
+                </StackPanel>
+            </Border>
+        </UniformGrid>
+
+        <!-- TABS -->
+        <TabControl Grid.Row="2"
+                    Background="Transparent"
+                    BorderThickness="0">
+
+            <!-- ========================================================== -->
+            <!-- TAB 1 — SUBSCRIBERS                                        -->
+            <!-- ========================================================== -->
+            <TabItem Header="Subscribers">
+                <Grid Margin="8">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <!-- Filter row -->
+                    <StackPanel Grid.Row="0"
+                                Orientation="Horizontal"
+                                Margin="0,0,0,8">
+                        <TextBlock Text="Tier:"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,6,0"
+                                   Foreground="{StaticResource TextMuted}" />
+                        <ComboBox Width="140"
+                                  SelectedValue="{Binding TierFilter}"
+                                  SelectedValuePath="Content"
+                                  Margin="0,0,16,0">
+                            <ComboBoxItem Content="ALL" />
+                            <ComboBoxItem Content="BASIC" />
+                            <ComboBoxItem Content="STANDARD" />
+                            <ComboBoxItem Content="PREMIUM" />
+                            <ComboBoxItem Content="TRIAL" />
+                        </ComboBox>
+                        <TextBlock Text="Status:"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,6,0"
+                                   Foreground="{StaticResource TextMuted}" />
+                        <ComboBox Width="140"
+                                  SelectedValue="{Binding StatusFilter}"
+                                  SelectedValuePath="Content">
+                            <ComboBoxItem Content="ALL" />
+                            <ComboBoxItem Content="TRIAL" />
+                            <ComboBoxItem Content="ACTIVE" />
+                            <ComboBoxItem Content="PAUSED" />
+                            <ComboBoxItem Content="CANCELLED" />
+                        </ComboBox>
+                    </StackPanel>
+
+                    <Border Grid.Row="1" Style="{StaticResource Card}">
+                        <DataGrid ItemsSource="{Binding FilteredSubscribers}"
+                                  SelectedItem="{Binding SelectedTrader}"
+                                  AutoGenerateColumns="False"
+                                  CanUserAddRows="False"
+                                  HeadersVisibility="Column"
+                                  IsReadOnly="True"
+                                  GridLinesVisibility="None">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Name"
+                                                    Binding="{Binding FullName}"
+                                                    Width="*" />
+                                <DataGridTextColumn Header="Mobile"
+                                                    Binding="{Binding Mobile}"
+                                                    Width="110" />
+                                <DataGridTextColumn Header="Business"
+                                                    Binding="{Binding BusinessName}"
+                                                    Width="*" />
+                                <DataGridTemplateColumn Header="Tier" Width="100">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Border CornerRadius="8"
+                                                    Padding="8,2"
+                                                    HorizontalAlignment="Left"
+                                                    Background="{Binding Tier, Converter={StaticResource TierToBrushConverter}}">
+                                                <TextBlock Text="{Binding Tier}"
+                                                           Foreground="White"
+                                                           FontWeight="SemiBold"
+                                                           FontSize="11" />
+                                            </Border>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTextColumn Header="Status"
+                                                    Binding="{Binding Status}"
+                                                    Width="90" />
+                                <DataGridTextColumn Header="Start Date"
+                                                    Binding="{Binding SubscriptionStartedAt, StringFormat={}{0:yyyy-MM-dd}}"
+                                                    Width="100" />
+                                <DataGridTextColumn Header="MRR"
+                                                    Binding="{Binding MonthlyAmount, StringFormat=₹{0:N0}}"
+                                                    Width="90" />
+                                <DataGridTextColumn Header="Last Report"
+                                                    Binding="{Binding LastReportAt, StringFormat={}{0:yyyy-MM-dd}, TargetNullValue=—}"
+                                                    Width="110" />
+                                <DataGridTextColumn Header="Queries Used"
+                                                    Binding="{Binding QueryCountThisMonth}"
+                                                    Width="90" />
+                                <DataGridTemplateColumn Header="Actions" Width="160">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Button Content="Send Report Now"
+                                                    Padding="8,2"
+                                                    FontSize="11"
+                                                    Background="{StaticResource BrandPrimary}"
+                                                    Foreground="White"
+                                                    BorderThickness="0"
+                                                    Command="{Binding DataContext.SendReportNowCommand,
+                                                              RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    CommandParameter="{Binding Id}" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Border>
+                </Grid>
+            </TabItem>
+
+            <!-- ========================================================== -->
+            <!-- TAB 2 — REPORTS                                            -->
+            <!-- ========================================================== -->
+            <TabItem Header="Reports">
+                <Grid Margin="8">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="220" />
+                    </Grid.RowDefinitions>
+
+                    <!-- Filter row -->
+                    <StackPanel Grid.Row="0"
+                                Orientation="Horizontal"
+                                Margin="0,0,0,8">
+                        <TextBlock Text="Type:"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,6,0"
+                                   Foreground="{StaticResource TextMuted}" />
+                        <ComboBox Width="140"
+                                  SelectedValue="{Binding ReportTypeFilter}"
+                                  SelectedValuePath="Content"
+                                  Margin="0,0,16,0">
+                            <ComboBoxItem Content="ALL" />
+                            <ComboBoxItem Content="WEEKLY" />
+                            <ComboBoxItem Content="FLASH" />
+                            <ComboBoxItem Content="DAILY" />
+                            <ComboBoxItem Content="PRE_SEASON" />
+                        </ComboBox>
+                        <TextBlock Text="Commodity:"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,6,0"
+                                   Foreground="{StaticResource TextMuted}" />
+                        <ComboBox Width="180"
+                                  SelectedValue="{Binding ReportCommodityFilter}"
+                                  SelectedValuePath="Content">
+                            <ComboBoxItem Content="ALL" />
+                            <ComboBoxItem Content="Dry Grapes" />
+                            <ComboBoxItem Content="Pomegranate" />
+                            <ComboBoxItem Content="Mango" />
+                            <ComboBoxItem Content="Alphonso" />
+                            <ComboBoxItem Content="Kesar" />
+                        </ComboBox>
+                    </StackPanel>
+
+                    <Border Grid.Row="1" Style="{StaticResource Card}">
+                        <DataGrid ItemsSource="{Binding FilteredReports}"
+                                  SelectedItem="{Binding SelectedReport}"
+                                  AutoGenerateColumns="False"
+                                  CanUserAddRows="False"
+                                  HeadersVisibility="Column"
+                                  IsReadOnly="True"
+                                  GridLinesVisibility="None">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Type"
+                                                    Binding="{Binding ReportType}"
+                                                    Width="100" />
+                                <DataGridTextColumn Header="Commodity"
+                                                    Binding="{Binding Commodity}"
+                                                    Width="*" />
+                                <DataGridTextColumn Header="Region"
+                                                    Binding="{Binding Region}"
+                                                    Width="*" />
+                                <DataGridTextColumn Header="Date"
+                                                    Binding="{Binding ReportDate, StringFormat={}{0:yyyy-MM-dd}}"
+                                                    Width="100" />
+                                <DataGridTemplateColumn Header="Signal" Width="110">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Border CornerRadius="6"
+                                                    Padding="6,1"
+                                                    HorizontalAlignment="Left"
+                                                    Background="{StaticResource BrandPrimary}">
+                                                <TextBlock Text="{Binding Signal}"
+                                                           Foreground="White"
+                                                           FontSize="11"
+                                                           FontWeight="SemiBold" />
+                                            </Border>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTextColumn Header="Day1"
+                                                    Binding="{Binding PriceForecastDay1, StringFormat=₹{0:N0}}"
+                                                    Width="80" />
+                                <DataGridTextColumn Header="Day3"
+                                                    Binding="{Binding PriceForecastDay3, StringFormat=₹{0:N0}}"
+                                                    Width="80" />
+                                <DataGridTextColumn Header="Day7"
+                                                    Binding="{Binding PriceForecastDay7, StringFormat=₹{0:N0}}"
+                                                    Width="80" />
+                                <DataGridTextColumn Header="Recipients"
+                                                    Binding="{Binding RecipientsCount}"
+                                                    Width="80" />
+                                <DataGridTextColumn Header="Delivered"
+                                                    Binding="{Binding DeliveredCount}"
+                                                    Width="80" />
+                                <DataGridTemplateColumn Header="Actions" Width="170">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal">
+                                                <Button Content="Preview"
+                                                        Padding="6,2"
+                                                        FontSize="11"
+                                                        Margin="0,0,4,0"
+                                                        Background="{StaticResource BrandPrimary}"
+                                                        Foreground="White"
+                                                        BorderThickness="0"
+                                                        Command="{Binding DataContext.PreviewReportCommand,
+                                                                  RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                        CommandParameter="{Binding}" />
+                                                <Button Content="Resend"
+                                                        Padding="6,2"
+                                                        FontSize="11"
+                                                        Background="{StaticResource BrandAccent}"
+                                                        Foreground="White"
+                                                        BorderThickness="0"
+                                                        Command="{Binding DataContext.ResendReportCommand,
+                                                                  RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                        CommandParameter="{Binding}" />
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Border>
+
+                    <!-- Preview pane -->
+                    <Border Grid.Row="2" Style="{StaticResource Card}" Margin="8,12,8,8">
+                        <StackPanel>
+                            <TextBlock Text="Report preview"
+                                       FontSize="14"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,6" />
+                            <ScrollViewer Height="160"
+                                          VerticalScrollBarVisibility="Auto">
+                                <TextBlock Text="{Binding ReportPreviewText}"
+                                           TextWrapping="Wrap"
+                                           FontFamily="Consolas"
+                                           FontSize="12"
+                                           Foreground="{StaticResource TextPrimary}" />
+                            </ScrollViewer>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </TabItem>
+
+            <!-- ========================================================== -->
+            <!-- TAB 3 — REVENUE                                            -->
+            <!-- ========================================================== -->
+            <TabItem Header="Revenue">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="8">
+
+                        <!-- Sub-KPIs -->
+                        <UniformGrid Columns="4" Rows="1">
+                            <Border Style="{StaticResource Card}">
+                                <StackPanel>
+                                    <TextBlock Text="Trial users" Style="{StaticResource CardTitle}" />
+                                    <TextBlock Text="{Binding Analytics.TrialUsers}"
+                                               Style="{StaticResource CardValue}"
+                                               Foreground="#F57C00" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource Card}">
+                                <StackPanel>
+                                    <TextBlock Text="Paused users" Style="{StaticResource CardTitle}" />
+                                    <TextBlock Text="{Binding Analytics.PausedUsers}"
+                                               Style="{StaticResource CardValue}"
+                                               Foreground="{StaticResource Warning}" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource Card}">
+                                <StackPanel>
+                                    <TextBlock Text="Cancelled users" Style="{StaticResource CardTitle}" />
+                                    <TextBlock Text="{Binding Analytics.CancelledUsers}"
+                                               Style="{StaticResource CardValue}"
+                                               Foreground="{StaticResource Danger}" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource Card}">
+                                <StackPanel>
+                                    <TextBlock Text="Trial conversion %" Style="{StaticResource CardTitle}" />
+                                    <TextBlock Text="{Binding Analytics.TrialConversionRatePct, StringFormat={}{0:N1}%, TargetNullValue=—}"
+                                               Style="{StaticResource CardValue}"
+                                               Foreground="{StaticResource Success}" />
+                                </StackPanel>
+                            </Border>
+                        </UniformGrid>
+
+                        <!-- Two charts side by side -->
+                        <Grid Margin="0,8,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+
+                            <Border Grid.Column="0" Style="{StaticResource Card}">
+                                <StackPanel>
+                                    <TextBlock Text="MRR — last 12 months"
+                                               FontSize="14"
+                                               FontWeight="SemiBold"
+                                               Margin="0,0,0,8" />
+                                    <lvc:CartesianChart Height="260"
+                                                        Series="{Binding MrrSeries}"
+                                                        XAxes="{Binding MrrXAxes}"
+                                                        YAxes="{Binding MrrYAxes}" />
+                                </StackPanel>
+                            </Border>
+
+                            <Border Grid.Column="1" Style="{StaticResource Card}">
+                                <StackPanel>
+                                    <TextBlock Text="Subscribers by tier"
+                                               FontSize="14"
+                                               FontWeight="SemiBold"
+                                               Margin="0,0,0,8" />
+                                    <lvc:PieChart Height="260"
+                                                  Series="{Binding TierPieSeries}" />
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+
+                        <!-- Full-width monthly revenue bars -->
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="Monthly revenue — last 12 months"
+                                           FontSize="14"
+                                           FontWeight="SemiBold"
+                                           Margin="0,0,0,8" />
+                                <lvc:CartesianChart Height="260"
+                                                    Series="{Binding RevenueBarSeries}"
+                                                    XAxes="{Binding RevenueBarXAxes}" />
+                            </StackPanel>
+                        </Border>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</UserControl>

@@ -1,0 +1,382 @@
+<UserControl x:Class="ShetMitraAdmin.Views.AlertsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:ShetMitraAdmin.ViewModels"
+             d:DataContext="{d:DesignInstance Type=vm:AlertsViewModel, IsDesignTimeCreatable=True}"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             Background="{StaticResource SurfaceBg}">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisAlerts" />
+    </UserControl.Resources>
+    <UserControl.DataContext>
+        <vm:AlertsViewModel />
+    </UserControl.DataContext>
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0"
+                   Text="Alerts"
+                   FontSize="26"
+                   FontWeight="Bold"
+                   Margin="8,8,0,16" />
+
+        <TabControl Grid.Row="1"
+                    SelectedIndex="{Binding SelectedTabIndex}"
+                    Background="Transparent"
+                    BorderThickness="0">
+
+            <!-- AMED Mismatches tab (SDD §7 Agent 6 Change 2) -->
+            <TabItem>
+                <TabItem.Header>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="AMED Mismatches" />
+                        <Border Background="{StaticResource Danger}"
+                                CornerRadius="8"
+                                Padding="6,1"
+                                Margin="6,0,0,0">
+                            <TextBlock Foreground="White"
+                                       FontSize="11"
+                                       FontWeight="SemiBold">
+                                <Run Text="{Binding CropMismatchCount}" />
+                                <Run Text="+" />
+                                <Run Text="{Binding AreaMismatchCount}" />
+                            </TextBlock>
+                        </Border>
+                    </StackPanel>
+                </TabItem.Header>
+
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <DockPanel LastChildFill="False">
+                                    <TextBlock DockPanel.Dock="Left"
+                                               Text="Crop type mismatches"
+                                               FontSize="16"
+                                               FontWeight="SemiBold" />
+                                    <Border DockPanel.Dock="Right"
+                                            Background="{StaticResource Danger}"
+                                            CornerRadius="10"
+                                            Padding="8,2">
+                                        <TextBlock Text="{Binding CropMismatchCount}"
+                                                   Foreground="White"
+                                                   FontWeight="Bold" />
+                                    </Border>
+                                </DockPanel>
+
+                                <DataGrid ItemsSource="{Binding CropMismatches}"
+                                          AutoGenerateColumns="False"
+                                          CanUserAddRows="False"
+                                          HeadersVisibility="Column"
+                                          IsReadOnly="True"
+                                          Margin="0,8,0,0">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="Farmer"     Binding="{Binding FarmerName}"        Width="*" />
+                                        <DataGridTextColumn Header="Registered" Binding="{Binding RegisteredCrop}"    Width="*" />
+                                        <DataGridTextColumn Header="AMED"       Binding="{Binding AmedDetectedCrop}"  Width="*" />
+                                        <DataGridTextColumn Header="Action"     Binding="{Binding RecommendedAction}" Width="2*" />
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <DockPanel LastChildFill="False">
+                                    <TextBlock DockPanel.Dock="Left"
+                                               Text="Area mismatches (above 20%)"
+                                               FontSize="16"
+                                               FontWeight="SemiBold" />
+                                    <Border DockPanel.Dock="Right"
+                                            Background="{StaticResource Warning}"
+                                            CornerRadius="10"
+                                            Padding="8,2">
+                                        <TextBlock Text="{Binding AreaMismatchCount}"
+                                                   Foreground="White"
+                                                   FontWeight="Bold" />
+                                    </Border>
+                                </DockPanel>
+
+                                <DataGrid ItemsSource="{Binding AreaMismatches}"
+                                          AutoGenerateColumns="False"
+                                          CanUserAddRows="False"
+                                          HeadersVisibility="Column"
+                                          IsReadOnly="True"
+                                          Margin="0,8,0,0">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="Farmer"           Binding="{Binding FarmerName}"                                Width="*" />
+                                        <DataGridTextColumn Header="Registered acres" Binding="{Binding RegisteredAcres}"                           Width="*" />
+                                        <DataGridTextColumn Header="AMED acres"       Binding="{Binding AmedAcres}"                                 Width="*" />
+                                        <DataGridTextColumn Header="Diff %"            Binding="{Binding AreaDiffPct, StringFormat={}{0:0.0}}"      Width="*" />
+                                        <DataGridTextColumn Header="Action"           Binding="{Binding RecommendedAction}"                         Width="2*" />
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- Variety Collection Status (May 2026 spec) -->
+            <TabItem>
+                <TabItem.Header>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Variety Collection" />
+                        <Border Background="#F57C00"
+                                CornerRadius="8"
+                                Padding="6,1"
+                                Margin="6,0,0,0">
+                            <TextBlock Foreground="White"
+                                       FontSize="11"
+                                       FontWeight="SemiBold"
+                                       Text="{Binding VarietySummary.AwaitingReply, FallbackValue=0}" />
+                        </Border>
+                    </StackPanel>
+                </TabItem.Header>
+
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <TextBlock Text="VARIETY COLLECTION STATUS"
+                                   FontSize="14"
+                                   FontWeight="Bold"
+                                   Foreground="{StaticResource TextMuted}"
+                                   Margin="8,8,0,8" />
+
+                        <!-- Crop + Region filters (Mango Agent 8 §9.3) -->
+                        <Border Style="{StaticResource Card}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                                    <TextBlock Text="Crop" Style="{StaticResource CardTitle}" />
+                                    <ComboBox ItemsSource="{Binding AvailableCropFilters}"
+                                              SelectedItem="{Binding SelectedCropFilter, Mode=TwoWay}"
+                                              Margin="0,4,0,0"
+                                              Padding="6,4" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1">
+                                    <TextBlock Text="Region" Style="{StaticResource CardTitle}" />
+                                    <ComboBox ItemsSource="{Binding AvailableRegionFilters}"
+                                              SelectedItem="{Binding SelectedRegionFilter, Mode=TwoWay}"
+                                              Margin="0,4,0,0"
+                                              Padding="6,4" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <!-- Summary cards: complete / awaiting / abandoned / agent required.
+                             Background tints reuse the same palette as the converter (green /
+                             orange / grey / red) so the card hue matches the queue badge. -->
+                        <UniformGrid Columns="4" Rows="1">
+                            <Border Style="{StaticResource Card}" Background="#2E7D32">
+                                <StackPanel>
+                                    <TextBlock Text="Collected"
+                                               Foreground="White"
+                                               FontWeight="SemiBold"
+                                               FontSize="13" />
+                                    <TextBlock Text="{Binding VarietySummary.Complete, FallbackValue=0}"
+                                               Foreground="White"
+                                               FontSize="26"
+                                               FontWeight="Bold"
+                                               Margin="0,4,0,0" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource Card}" Background="#F57C00">
+                                <StackPanel>
+                                    <TextBlock Text="Awaiting reply"
+                                               Foreground="White"
+                                               FontWeight="SemiBold"
+                                               FontSize="13" />
+                                    <TextBlock Text="{Binding VarietySummary.AwaitingReply, FallbackValue=0}"
+                                               Foreground="White"
+                                               FontSize="26"
+                                               FontWeight="Bold"
+                                               Margin="0,4,0,0" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource Card}" Background="#9E9E9E">
+                                <StackPanel>
+                                    <TextBlock Text="Abandoned"
+                                               Foreground="White"
+                                               FontWeight="SemiBold"
+                                               FontSize="13" />
+                                    <TextBlock Text="{Binding VarietySummary.Abandoned, FallbackValue=0}"
+                                               Foreground="White"
+                                               FontSize="26"
+                                               FontWeight="Bold"
+                                               Margin="0,4,0,0" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource Card}" Background="#C62828">
+                                <StackPanel>
+                                    <TextBlock Text="Agent required"
+                                               Foreground="White"
+                                               FontWeight="SemiBold"
+                                               FontSize="13" />
+                                    <TextBlock Text="{Binding VarietySummary.AgentRequired, FallbackValue=0}"
+                                               Foreground="White"
+                                               FontSize="26"
+                                               FontWeight="Bold"
+                                               Margin="0,4,0,0" />
+                                </StackPanel>
+                            </Border>
+                        </UniformGrid>
+
+                        <!-- Variety queue table -->
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="Variety Collection Queue"
+                                           FontSize="16"
+                                           FontWeight="SemiBold"
+                                           Margin="0,0,0,8" />
+                                <DataGrid ItemsSource="{Binding FilteredVarietyQueue}"
+                                          AutoGenerateColumns="False"
+                                          CanUserAddRows="False"
+                                          HeadersVisibility="Column"
+                                          IsReadOnly="True"
+                                          GridLinesVisibility="Horizontal"
+                                          RowHeaderWidth="0">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="Farmer"
+                                                            Binding="{Binding FarmerName}"
+                                                            Width="*" />
+                                        <DataGridTextColumn Header="Mobile"
+                                                            Binding="{Binding Mobile}"
+                                                            Width="*" />
+                                        <DataGridTextColumn Header="Crop (AMED)"
+                                                            Binding="{Binding AmedCrop}"
+                                                            Width="*" />
+                                        <DataGridTemplateColumn Header="Status" Width="1.2*">
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <Border Background="{Binding Status, Converter={StaticResource VarietyStatusToBrushConverter}}"
+                                                            CornerRadius="8"
+                                                            Padding="6,2"
+                                                            HorizontalAlignment="Left">
+                                                        <TextBlock Text="{Binding Status}"
+                                                                   Foreground="White"
+                                                                   FontSize="11"
+                                                                   FontWeight="SemiBold" />
+                                                    </Border>
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                        </DataGridTemplateColumn>
+                                        <DataGridTextColumn Header="Attempts"
+                                                            Binding="{Binding Attempts}"
+                                                            Width="0.6*" />
+                                        <DataGridTextColumn Header="Last Attempt"
+                                                            Binding="{Binding LastAttempt, StringFormat={}{0:yyyy-MM-dd HH:mm}}"
+                                                            Width="*" />
+                                        <DataGridTemplateColumn Header="Actions" Width="2.4*">
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <Button Content="Send Reminder"
+                                                                Margin="0,0,4,0"
+                                                                Padding="6,2"
+                                                                Command="{Binding DataContext.SendReminderCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                                CommandParameter="{Binding FarmerId}" />
+                                                        <Button Content="Mark Agent Required"
+                                                                Margin="0,0,4,0"
+                                                                Padding="6,2"
+                                                                Command="{Binding DataContext.MarkAgentRequiredCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                                CommandParameter="{Binding FarmerId}" />
+                                                        <Button Content="Enter Manually"
+                                                                Padding="6,2"
+                                                                Command="{Binding DataContext.OpenManualEntryCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                                CommandParameter="{Binding}" />
+                                                    </StackPanel>
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                        </DataGridTemplateColumn>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Manual entry inline form (visible only when ManualFormVisible) -->
+                        <Border Style="{StaticResource Card}"
+                                BorderBrush="#2E7D32"
+                                BorderThickness="2"
+                                Visibility="{Binding ManualFormVisible, Converter={StaticResource BoolToVisAlerts}}">
+                            <StackPanel>
+                                <TextBlock FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8">
+                                    <Run Text="Enter variety manually — " />
+                                    <Run Text="{Binding SelectedQueueRow.FarmerName, FallbackValue=' '}" />
+                                </TextBlock>
+
+                                <TextBlock Text="Variety" Style="{StaticResource CardTitle}" />
+                                <TextBox Text="{Binding ManualEntry.Variety, UpdateSourceTrigger=PropertyChanged}"
+                                         Margin="0,2,0,8"
+                                         Padding="6,4" />
+
+                                <TextBlock Text="Acres" Style="{StaticResource CardTitle}" />
+                                <TextBox Text="{Binding ManualEntry.Acres, UpdateSourceTrigger=PropertyChanged, TargetNullValue=''}"
+                                         Margin="0,2,0,8"
+                                         Padding="6,4" />
+
+                                <TextBlock Text="Notes" Style="{StaticResource CardTitle}" />
+                                <TextBox Text="{Binding ManualEntry.Notes, UpdateSourceTrigger=PropertyChanged, TargetNullValue=''}"
+                                         Margin="0,2,0,8"
+                                         Padding="6,4"
+                                         AcceptsReturn="True"
+                                         Height="60"
+                                         TextWrapping="Wrap" />
+
+                                <Button Content="Save"
+                                        Command="{Binding SaveManualCommand}"
+                                        HorizontalAlignment="Left"
+                                        Padding="12,4"
+                                        Background="#2E7D32"
+                                        Foreground="White"
+                                        FontWeight="SemiBold"
+                                        BorderThickness="0" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- NDVI Alerts (separate per spec) -->
+            <TabItem>
+                <TabItem.Header>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="NDVI Deterioration" />
+                        <Border Background="{StaticResource Warning}"
+                                CornerRadius="8"
+                                Padding="6,1"
+                                Margin="6,0,0,0">
+                            <TextBlock Text="{Binding NdviAlertCount}"
+                                       Foreground="White"
+                                       FontSize="11"
+                                       FontWeight="SemiBold" />
+                        </Border>
+                    </StackPanel>
+                </TabItem.Header>
+
+                <Border Style="{StaticResource Card}">
+                    <DataGrid ItemsSource="{Binding NdviAlerts}"
+                              AutoGenerateColumns="False"
+                              CanUserAddRows="False"
+                              HeadersVisibility="Column"
+                              IsReadOnly="True">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Farmer"    Binding="{Binding FarmerName}" Width="*" />
+                            <DataGridTextColumn Header="Severity"  Binding="{Binding Severity}"  Width="*" />
+                            <DataGridTextColumn Header="Message"   Binding="{Binding Message}"   Width="3*" />
+                            <DataGridTextColumn Header="Detected"  Binding="{Binding CreatedAt}" Width="*" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Border>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</UserControl>

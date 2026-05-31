@@ -1,0 +1,248 @@
+
+    <html>
+    <head>
+    <style>
+
+    body, table, td, th {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        font-size:13px;
+    }
+
+    body {
+        background:#f2f2f2;
+    }
+
+    .container {
+        width:650px;
+        margin:auto;
+        background:white;
+        border-radius:20px;
+        border:3px solid #2e7d32;
+        overflow:hidden;
+    }
+
+    /* HEADER */
+    .header {
+        background:#1b5e20;
+        color:white;
+        padding:10px;
+    }
+
+    .header-top {
+        text-align:center;
+        font-weight:600;
+        font-size:16px;
+    }
+
+    .header-row {
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+    }
+
+    .left {
+        display:flex;
+        align-items:center;
+        gap:10px;
+    }
+
+    .logo { width:45px; }
+
+    .title { font-size:18px; font-weight:700; }
+
+    .subtitle { font-size:12px; opacity:0.9; }
+
+    .badge {
+        background:#ffd54f;
+        padding:6px 12px;
+        border-radius:18px;
+        font-size:12px;
+        font-weight:600;
+    }
+
+    table {
+        width:100%;
+        border-collapse:collapse;
+    }
+
+    td, th {
+        padding:10px;
+        text-align:center;
+    }
+
+    /* GRID */
+    .grid table {
+        border-spacing:10px;
+        padding:15px;
+    }
+
+    .cell {
+        height:60px;
+        border-radius:10px;
+    }
+
+    .green {background:#2e7d32;}
+    .lightgreen {background:#66bb6a;}
+    .yellow {background:#f2c94c;}
+    .orange {background:#f57c00;}
+    .red {background:#e53935;}
+
+    /* LEGEND */
+    .legend {
+        background:#dcdcdc;
+        margin:10px;
+        padding:12px;
+        border-radius:10px;
+        line-height:1.8;
+    }
+
+    /* WEATHER */
+    .weather {
+        background:#a7c4dd;
+        margin:10px;
+        padding:12px;
+        border-radius:10px;
+        text-align:center;
+    }
+
+    /* ALERT (FINAL PERFECT MATCH) */
+    .alert {
+        background:#e5c2c2;
+        margin:12px;
+        padding:10px 14px;
+        border-radius:12px;
+        border-left:8px solid #d32f2f;
+        text-align:center;
+        line-height:1.5;
+    }
+
+    /* PRICE */
+    .price {
+        background:#9ac29a;
+        margin:10px;
+        padding:12px;
+        border-radius:10px;
+    }
+
+    .section-title {
+        font-weight:700;
+        margin-top:10px;
+        margin-bottom:5px;
+    }
+
+    .footer {
+        text-align:center;
+        padding:10px;
+    }
+
+    </style>
+    </head>
+
+    <body>
+
+    <div class="container">
+
+    <!-- HEADER -->
+    <div class="header">
+        <div class="header-top">04 Apr 2026</div>
+        <div class="header-row">
+            <div class="left">
+                <img src="logo.svg" class="logo">
+                <div>
+                    <div class="title">Shet Mitra</div>
+                    <div class="subtitle">Sahyadri Krushi Intelligence</div>
+                </div>
+            </div>
+            <div class="badge">⭐ Upcoming Feature: Disease Identification</div>
+        </div>
+    </div>
+
+    <!-- GRID -->
+    <div class="grid">
+        <table><tr><td class='cell green'></td><td class='cell lightgreen'></td><td class='cell green'></td><td class='cell lightgreen'></td></tr><tr><td class='cell lightgreen'></td><td class='cell orange'></td><td class='cell yellow'></td><td class='cell green'></td></tr><tr><td class='cell lightgreen'></td><td class='cell red'></td><td class='cell orange'></td><td class='cell green'></td></tr><tr><td class='cell green'></td><td class='cell yellow'></td><td class='cell lightgreen'></td><td class='cell green'></td></tr></table>
+    </div>
+
+    <!-- LEGEND -->
+    <div class="legend">
+        🟢 Green → Healthy → Continue schedule<br>
+        🟡 Yellow → Mild → Monitor closely<br>
+        🟠 Orange → Moderate → Inspect & treat<br>
+        🔴 Red → Severe → Immediate action required
+    </div>
+
+    <!-- WEATHER -->
+    <div class="weather">
+        <b>Weather (5-day summary)</b>
+        <table>
+            <tr><td></td><td><b>2 Apr</b></td><td><b>3 Apr</b></td><td><b>4 Apr</b></td><td><b>5 Apr</b></td><td><b>6 Apr</b></td></tr>
+            <tr><td>Weather</td><td>☀️</td><td>⛅</td><td>⛈️</td><td>⛈️</td><td>⛅</td></tr>
+            <tr><td>Spray</td><td style='color:green;font-weight:600'>OK</td><td style='color:green;font-weight:600'>OK</td><td style='color:red;font-weight:600'>No</td><td style='color:red;font-weight:600'>No</td><td style='color:orange;font-weight:600'>Monitor</td></tr>
+            <tr><td>Drying</td><td>Perfect</td><td>Slow</td><td>No</td><td>No</td><td>No</td></tr>
+        </table>
+    </div>
+
+    <!-- ALERT -->
+    <div class="alert">
+        <div style="font-weight:700;">☔ HEAVY RAIN WINDOW</div>
+        <div style="margin-top:4px;">4 Apr → 5 Apr</div>
+        <div>STOP spraying</div>
+        <div>Resume after rain</div>
+    </div>
+
+    <!-- PRICE -->
+    <div class="price">
+
+        <b>Pomegranate (Sangli APMC)</b><br>
+        Updated: 2 Apr 2026, 11:30 AM
+
+        
+        <div class="section-title">Grade-wise Prices</div>
+        <table>
+            <tr><th>Grade</th><th>Price</th></tr>
+            
+            <tr>
+                <td>Premium</td>
+                <td style="color:green;font-weight:600;">₹8500</td>
+            </tr>
+            
+            <tr>
+                <td>Medium</td>
+                <td style="color:orange;font-weight:600;">₹7000</td>
+            </tr>
+            
+            <tr>
+                <td>Low</td>
+                <td style="color:red;font-weight:600;">₹5000</td>
+            </tr>
+            
+        </table>
+        
+
+        <div class="section-title">Market Summary</div>
+        <table>
+            <tr><th></th><th>Min</th><th>Modal</th><th>Max</th></tr>
+            <tr>
+                <td>Price</td>
+                <td>₹5000</td>
+                <td>₹7000</td>
+                <td>₹8500</td>
+            </tr>
+            <tr>
+                <td>Arrival</td>
+                <td>80</td>
+                <td>120</td>
+                <td>60</td>
+            </tr>
+        </table>
+
+        <br>
+        Advice: Hold premium, sell mid-grade
+    </div>
+
+    <div class="footer">Shet Mitra 🌿</div>
+
+    </div>
+
+    </body>
+    </html>
+    

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Analysis Dashboard</title>
+    <style>
+        body { font-family: Arial; background: #f4f6f8; text-align: center; }
+        .container { width: 80%; margin: auto; }
+
+        select, button {
+            padding: 10px;
+            margin: 10px;
+            font-size: 16px;
+        }
+
+        button {
+            background: #2980b9;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+        }
+
+        th, td { padding: 12px; border: 1px solid #ddd; }
+        th { background: #34495e; color: white; }
+
+        .best { background: #d4edda; font-weight: bold; }
+
+        .verdict { margin-top: 20px; font-size: 20px; font-weight: bold; }
+        .sell { color: red; }
+        .hold { color: orange; }
+        .shift { color: green; }
+    </style>
+</head>
+<body>
+
+<h1>🧠 Shet Mitra - Analysis Dashboard</h1>
+
+<div class="container">
+
+    <!-- Crop Dropdown -->
+    <select id="crop" onchange="loadMandis()">
+        <option value="">Select Crop</option>
+    </select>
+
+    <!-- Mandi Dropdown -->
+    <select id="mandi">
+        <option value="">Select Mandi</option>
+    </select>
+
+    <button onclick="loadData()">Analyze</button>
+
+    <div id="tableContainer"></div>
+    <div id="verdict"></div>
+
+</div>
+
+<script>
+
+window.onload = loadCrops;
+
+// 🔥 Load Crops
+async function loadCrops() {
+    const response = await fetch("http://127.0.0.1:8000/crops");
+    const crops = await response.json();
+
+    const dropdown = document.getElementById("crop");
+
+    crops.forEach(c => {
+        const option = document.createElement("option");
+        option.value = c;
+        option.text = c;
+        dropdown.appendChild(option);
+    });
+}
+
+// 🔥 Load Mandis based on crop
+async function loadMandis() {
+    const crop = document.getElementById("crop").value;
+
+    if (!crop) return;
+
+    const response = await fetch(
+        `http://127.0.0.1:8000/mandis?crop=${crop}`
+    );
+
+    const mandis = await response.json();
+
+    const dropdown = document.getElementById("mandi");
+    dropdown.innerHTML = "";
+
+    mandis.forEach(m => {
+        const option = document.createElement("option");
+        option.value = m;
+        option.text = m;
+        dropdown.appendChild(option);
+    });
+}
+
+// 🔥 Analysis
+async function loadData() {
+    const crop = document.getElementById("crop").value;
+    const mandi = document.getElementById("mandi").value;
+
+    const response = await fetch(
+        `http://127.0.0.1:8000/analysis?crop=${crop}&farmer_mandi=${mandi}`
+    );
+
+    const data = await response.json();
+
+    if (data.error) {
+        document.getElementById("verdict").innerHTML =
+            `<p style="color:red;">${data.error}</p>`;
+        return;
+    }
+
+    let table = `
+        <table>
+            <tr>
+                <th>Mandi</th>
+                <th>Price</th>
+                <th>Distance</th>
+            </tr>
+    `;
+
+    data.mandis.forEach(m => {
+        let cls = (m.mandi === data.recommendation.best_mandi) ? "best" : "";
+
+        table += `
+            <tr class="${cls}">
+                <td>${m.mandi}</td>
+                <td>${m.price}</td>
+                <td>${m.distance}</td>
+            </tr>
+        `;
+    });
+
+    table += "</table>";
+
+    document.getElementById("tableContainer").innerHTML = table;
+
+    document.getElementById("verdict").innerHTML = `
+        <div class="verdict">
+            ${data.recommendation.verdict} → ${data.recommendation.best_mandi}
+        </div>
+        <p>${data.recommendation.reason}</p>
+    `;
+}
+
+</script>
+
+</body>
+</html>

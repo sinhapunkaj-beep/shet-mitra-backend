@@ -1,0 +1,32 @@
+name: shetmitra_agent
+description: ShetMitra field-agent companion app — region-based territory, farmer registration, and mango belt intelligence.
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+  flutter: '>=3.16.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.6
+  http: ^1.1.2
+  provider: ^6.1.1
+  shared_preferences: ^2.2.2
+  geolocator: ^11.0.0
+  intl: ^0.19.0
+  flutter_local_notifications: ^17.0.0
+  # supabase_flutter: ^2.5.0
+  # NOTE: supabase_flutter would be added here for live mode (realtime
+  # subscriptions, auth, storage). The current scaffold uses plain http
+  # against the REST endpoint with the anon-key, which is sufficient for
+  # the field agent flows described in SDD §7.
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+
+flutter:
+  uses-material-design: true

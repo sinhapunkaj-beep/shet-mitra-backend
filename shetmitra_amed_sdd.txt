@@ -1,0 +1,1105 @@
+═══════════════════════════════════════════════════════════════
+SHETMITRA — SYSTEM DESIGN DOCUMENT
+AMED Integration + ML Price Model Enhancement
+6-Agent Swarm Build
+Version: 1.0 — April 2026
+Owner: Pankaj Sinha — Sahyadri Krushi Intelligence
+═══════════════════════════════════════════════════════════════
+
+PROJECT FOLDER: C:\Users\Pankaj Sinha\Desktop\shetmitra
+GITHUB: https://github.com/sinhapunkaj-beep/shetmitra.git
+SUPABASE: https://nahftvhvuijhdktrcbbm.supabase.co
+
+═══════════════════════════════════════════════════════════════
+SECTION 1 — OBJECTIVE
+═══════════════════════════════════════════════════════════════
+
+Redesign ShetMitra intelligence stack:
+
+BEFORE:
+  Primary:   Sentinel-2 NDVI (Copernicus)
+  Secondary: Nothing
+  Crop type: Farmer self-reported (unverified)
+  History:   Zero — starts from registration day
+
+AFTER:
+  Primary:   AMED API (Google DeepMind)
+             crop type, field size, sowing date,
+             harvest date, 3-year history,
+             regional belt data
+  Secondary: Sentinel-2 NDVI (Copernicus)
+             NDVI, RECI, NDWI, LAI, NPP
+             adds health detail AMED cannot give
+  Tertiary:  Prithvi (IBM/NASA HuggingFace)
+             geospatial foundation model
+  Reasoning: Claude LLM (Anthropic)
+             integrated advisory generation
+
+AMED API STATUS: Application submitted — awaiting key
+BUILD APPROACH: Use mock AMED data now.
+  One config flag in .env switches mock to live:
+  AMED_USE_MOCK=true  → uses mock responses
+  AMED_USE_MOCK=false → uses live AMED API
+  AMED_API_KEY=       → populated when key arrives
+
+═══════════════════════════════════════════════════════════════
+SECTION 2 — AMED API SPECIFICATION
+═══════════════════════════════════════════════════════════════
+
+DEVELOPER REFERENCE:
+  AMED is part of Google Earth Engine platform
+  Base URL (expected): https://earthengine.googleapis.com/v1
+  Authentication: Google OAuth2 service account
+  OR: Direct AMED partner API endpoint (TBC on key receipt)
+
+MOCK API STRUCTURE (use until real key arrives):
+  File: geo/amed_mock.py
+  Returns realistic data for Tasgaon/Sangli belt
+
+────────────────────────────────────────────────────────────────
+2.1 FIELD-LEVEL QUERY (per farm)
+────────────────────────────────────────────────────────────────
+
+REQUEST:
+  Input: Farm polygon coordinates (lat/lng array)
+         OR centroid lat/lng + area_acres
+  
+  Example:
+  {
+    "polygon": [
+      [17.0374, 74.5958],
+      [17.0380, 74.5965],
+      [17.0370, 74.5970],
+      [17.0364, 74.5963]
+    ],
+    "crop_season": "rabi_2025_26"
+  }
+
+RESPONSE (mock structure — real AMED may vary):
+  {
+    "field_id": "amed_field_xxxxx",
+    "crop_type": "Grapes",
+    "crop_variety_hint": "Thompson Seedless",
+    "crop_confidence": 0.91,
+    "field_size_acres": 3.1,
+    "sowing_date": "2025-12-10",
+    "harvest_date_predicted": "2026-04-18",
+    "growth_stage": "berry_development",
+    "growth_stage_confidence": 0.87,
+    "irrigation_detected": true,
+    "last_event": "irrigation",
+    "last_event_date": "2026-04-08",
+    "history": [
+      {
+        "season": "2024-25",
+        "crop_type": "Grapes",
+        "sowing_date": "2024-12-05",
+        "harvest_date": "2025-04-22",
+        "area_acres": 3.1
+      },
+      {
+        "season": "2023-24",
+        "crop_type": "Grapes",
+        "sowing_date": "2023-12-08",
+        "harvest_date": "2024-04-19",
+        "area_acres": 3.1
+      },
+      {
+        "season": "2022-23",
+        "crop_type": "Grapes",
+        "sowing_date": "2022-12-12",
+        "harvest_date": "2023-04-24",
+        "area_acres": 3.0
+      }
+    ],
+    "data_refresh_date": "2026-04-06",
+    "source": "AMED"
+  }
+
+────────────────────────────────────────────────────────────────
+2.2 BELT-LEVEL QUERY (regional — Tasgaon/Sangli belt)
+────────────────────────────────────────────────────────────────
+
+REQUEST:
+  Input: Bounding box for region
+         crop_type filter
+         date range
+  
+  {
+    "bbox": {
+      "north": 17.2,
+      "south": 16.8,
+      "east": 74.8,
+      "west": 74.3
+    },
+    "crop_type": "Grapes",
+    "season": "rabi_2025_26"
+  }
+
+RESPONSE:
+  {
+    "region": "Tasgaon_Sangli_belt",
+    "crop_type": "Grapes",
+    "total_fields_detected": 2847,
+    "total_area_acres": 8234,
+    "harvest_forecast": [
+      {
+        "week_start": "2026-04-07",
+        "week_end": "2026-04-13",
+        "fields_harvesting": 234,
+        "estimated_volume_mt": 340
+      },
+      {
+        "week_start": "2026-04-14",
+        "week_end": "2026-04-20",
+        "fields_harvesting": 467,
+        "estimated_volume_mt": 680
+      },
+      {
+        "week_start": "2026-04-21",
+        "week_end": "2026-04-27",
+        "fields_harvesting": 312,
+        "estimated_volume_mt": 450
+      },
+      {
+        "week_start": "2026-04-28",
+        "week_end": "2026-05-04",
+        "fields_harvesting": 145,
+        "estimated_volume_mt": 210
+      }
+    ],
+    "health_distribution": {
+      "good": 0.63,
+      "moderate": 0.24,
+      "stressed": 0.10,
+      "critical": 0.03
+    },
+    "data_refresh_date": "2026-04-06",
+    "source": "AMED"
+  }
+
+────────────────────────────────────────────────────────────────
+2.3 HISTORICAL QUERY (3-year belt history)
+────────────────────────────────────────────────────────────────
+
+REQUEST:
+  {
+    "bbox": { same as above },
+    "crop_type": "Grapes",
+    "seasons": ["2022-23", "2023-24", "2024-25"]
+  }
+
+RESPONSE:
+  Array of season objects each containing:
+  season, total_area_acres, peak_harvest_week,
+  estimated_total_volume_mt, avg_harvest_date
+
+────────────────────────────────────────────────────────────────
+2.4 MOCK DATA DESIGN (Tasgaon/Sangli belt)
+────────────────────────────────────────────────────────────────
+
+File: geo/amed_mock.py
+
+Mock data covers:
+  - All 102 seeded test farmers
+  - Crop types matching current_crop in farmers table
+  - Realistic Sangli belt harvest windows:
+    Grapes: sow Dec, harvest Apr-May
+    Pomegranate: sow varies, harvest Aug-Feb
+  - 3 years of history per farm
+  - Belt-level: 2847 grape fields in Tasgaon/Sangli
+  - Harvest volume forecast: peaks week of 14 Apr
+
+Switch logic in geo/amed_client.py:
+  if AMED_USE_MOCK == 'true':
+    return amed_mock.get_field_data(polygon)
+  else:
+    return amed_live.get_field_data(polygon, AMED_API_KEY)
+
+═══════════════════════════════════════════════════════════════
+SECTION 3 — DATABASE SCHEMA CHANGES
+═══════════════════════════════════════════════════════════════
+
+────────────────────────────────────────────────────────────────
+3.1 NEW TABLE: amed_readings
+────────────────────────────────────────────────────────────────
+
+CREATE TABLE amed_readings (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  plot_id uuid REFERENCES farm_plots(id),
+  fetch_date date NOT NULL,
+  crop_type_detected text,
+  crop_type_confidence numeric,
+  field_size_acres_amed numeric,
+  sowing_date date,
+  harvest_date_predicted date,
+  growth_stage text,
+  growth_stage_confidence numeric,
+  irrigation_detected boolean,
+  last_event text,
+  last_event_date date,
+  data_refresh_date date,
+  use_mock boolean DEFAULT true,
+  raw_response jsonb,
+  created_at timestamptz DEFAULT now()
+);
+
+CREATE INDEX idx_amed_plot ON amed_readings(plot_id);
+CREATE INDEX idx_amed_date ON amed_readings(fetch_date);
+
+────────────────────────────────────────────────────────────────
+3.2 NEW TABLE: amed_belt_data
+────────────────────────────────────────────────────────────────
+
+CREATE TABLE amed_belt_data (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  region text NOT NULL,
+  fetch_date date NOT NULL,
+  crop_type text NOT NULL,
+  total_fields_detected integer,
+  total_area_acres numeric,
+  harvest_week_start date,
+  harvest_week_end date,
+  fields_harvesting integer,
+  estimated_volume_mt numeric,
+  health_pct_good numeric,
+  health_pct_moderate numeric,
+  health_pct_stressed numeric,
+  health_pct_critical numeric,
+  data_refresh_date date,
+  raw_response jsonb,
+  created_at timestamptz DEFAULT now()
+);
+
+CREATE INDEX idx_belt_region_date
+  ON amed_belt_data(region, fetch_date);
+
+────────────────────────────────────────────────────────────────
+3.3 NEW TABLE: amed_history
+────────────────────────────────────────────────────────────────
+
+CREATE TABLE amed_history (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  region text NOT NULL,
+  season_label text NOT NULL,
+  season_year_start integer,
+  crop_type text,
+  total_area_acres numeric,
+  harvest_start_date date,
+  harvest_peak_date date,
+  harvest_end_date date,
+  estimated_total_volume_mt numeric,
+  avg_price_modal_kg numeric,
+  created_at timestamptz DEFAULT now(),
+  UNIQUE(region, season_label, crop_type)
+);
+
+────────────────────────────────────────────────────────────────
+3.4 CHANGES TO EXISTING TABLES
+────────────────────────────────────────────────────────────────
+
+farm_plots — ADD COLUMNS:
+  ALTER TABLE farm_plots
+    ADD COLUMN IF NOT EXISTS
+      amed_crop_verified boolean DEFAULT false,
+    ADD COLUMN IF NOT EXISTS
+      amed_field_id text,
+    ADD COLUMN IF NOT EXISTS
+      amed_last_fetch date,
+    ADD COLUMN IF NOT EXISTS
+      crop_type_mismatch boolean DEFAULT false,
+    ADD COLUMN IF NOT EXISTS
+      area_mismatch_pct numeric;
+
+  LOGIC: After AMED fetch —
+    If AMED crop != farmer's current_crop → set mismatch=true
+    If |AMED acres - farmer acres| > 20% → set mismatch pct
+    Show mismatch warnings in WPF dashboard Alerts screen
+
+advisories — ADD COLUMNS:
+  ALTER TABLE advisories (or spray_advisories)
+    ADD COLUMN IF NOT EXISTS
+      harvest_window_start date,
+    ADD COLUMN IF NOT EXISTS
+      harvest_window_end date,
+    ADD COLUMN IF NOT EXISTS
+      harvest_source text DEFAULT 'ndvi_estimate',
+      -- values: 'amed_confirmed', 'ndvi_estimate'
+    ADD COLUMN IF NOT EXISTS
+      harvest_confidence numeric;
+
+price_history_training — ADD COLUMNS:
+  ALTER TABLE price_history_training
+    ADD COLUMN IF NOT EXISTS
+      amed_belt_volume_mt numeric,
+    ADD COLUMN IF NOT EXISTS
+      amed_fields_harvesting integer,
+    ADD COLUMN IF NOT EXISTS
+      amed_health_pct_good numeric,
+    ADD COLUMN IF NOT EXISTS
+      amed_season_week integer;
+
+═══════════════════════════════════════════════════════════════
+SECTION 4 — UPDATED PIPELINE ARCHITECTURE
+═══════════════════════════════════════════════════════════════
+
+────────────────────────────────────────────────────────────────
+4.1 DAILY PIPELINE SEQUENCE (revised)
+────────────────────────────────────────────────────────────────
+
+00:30 AM — Market Fetch (unchanged)
+  Agmarknet/CEDA prices
+  Correspondent submissions
+
+00:45 AM — AMED Belt Fetch (NEW — runs every 2 weeks)
+  Fetch belt-level harvest forecast for Tasgaon/Sangli
+  Store in amed_belt_data
+  Only calls AMED API every 14 days (matches refresh rate)
+  Uses cached belt data on other days
+
+04:00 AM — AMED + Sentinel-2 Pipeline (REVISED M3)
+  Step 1: AMED field fetch for each active farm
+    Get crop type, harvest date, sowing date
+    Verify against farmer's registered crop
+    Flag mismatches
+    Only calls AMED every 14 days per farm
+  Step 2: Sentinel-2 fetch (existing)
+    NDVI, RECI, NDWI, LAI, NPP
+    Prithvi inference
+    GEE historical NPP
+  Step 3: Combine AMED + Sentinel-2
+    Primary harvest window: from AMED
+    Secondary health detail: from Sentinel-2
+    Confidence = AMED confidence x Sentinel-2 quality
+
+05:00 AM — Weather Fetch (unchanged)
+
+05:30 AM — Advisory Generation (REVISED M6)
+  Inputs now include:
+    AMED harvest date (primary)
+    AMED growth stage
+    AMED regional belt harvest forecast
+    Sentinel-2 NDVI/RECI/NDWI/LAI
+    Weather forecast
+    ARIMA price prediction with AMED belt data
+    Claude LLM reasoning
+
+06:00 AM — Report + Delivery (unchanged)
+
+────────────────────────────────────────────────────────────────
+4.2 FALLBACK LOGIC
+────────────────────────────────────────────────────────────────
+
+If AMED unavailable (API down or key not yet active):
+  AMED_USE_MOCK=true → use mock data
+  Pipeline continues normally
+  All downstream agents receive mock AMED data
+  No pipeline failure
+
+If Sentinel-2 unavailable (cloud cover):
+  Mark cloud_cover_flag = true in ndvi_readings
+  Use last available NDVI reading (max 14 days old)
+  Reduce confidence score by 15%
+
+If both AMED and Sentinel-2 unavailable:
+  Skip advisory generation for affected farms
+  Log to cron_run_log with reason
+  Send basic weather-only report to farmer
+
+════════════════════════════════════════════════════════════════
+SECTION 5 — ML PRICE MODEL ENHANCEMENT
+════════════════════════════════════════════════════════════════
+
+────────────────────────────────────────────────────────────────
+5.1 CURRENT MODEL PERFORMANCE
+────────────────────────────────────────────────────────────────
+
+  Dry Grapes (Tasgaon):  MAPE 36.38% — LOW CONFIDENCE
+  Pomegranate (Solapur): MAPE 16.54% — OK
+
+  Root cause of poor Dry Grapes accuracy:
+    2025 price spike outside training distribution
+    Model has no visibility of supply-side (arrivals)
+    before they actually hit the mandi
+
+────────────────────────────────────────────────────────────────
+5.2 NEW FEATURES FROM AMED
+────────────────────────────────────────────────────────────────
+
+FEATURE 1 — Weekly harvest volume forecast
+  amed_belt_volume_mt: estimated MT arriving next 1-4 weeks
+  This is a LEADING indicator — predicts arrivals
+  before they show up in Agmarknet
+  
+  Correlation hypothesis:
+  High AMED forecast volume → arrivals spike 1-2 weeks later
+  → price pressure → prices drop
+  Low AMED forecast volume → tight supply
+  → price support → prices hold or rise
+
+FEATURE 2 — Regional health distribution
+  amed_health_pct_good: % of belt farms in good health
+  High good % → high quality → premium prices
+  Low good % → quality issues → discount prices
+
+FEATURE 3 — Season timing vs historical
+  Is this season early/late vs 3-year average?
+  Early season → first-to-market premium
+  Late season → rush to sell before quality drops
+
+FEATURE 4 — Fields actively harvesting
+  amed_fields_harvesting: count harvesting this week
+  Proxy for actual market supply pressure
+
+────────────────────────────────────────────────────────────────
+5.3 UPDATED MODEL ARCHITECTURE
+────────────────────────────────────────────────────────────────
+
+Model: log-ARIMAX (existing base)
+New exogenous variables added:
+  amed_belt_volume_mt_lag1 (AMED volume forecast 1wk ahead)
+  amed_belt_volume_mt_lag2 (AMED volume forecast 2wk ahead)
+  amed_health_pct_good
+  amed_fields_harvesting
+  season_timing_deviation (days early/late vs 3yr avg)
+
+Training data update:
+  Existing: CEDA prices 2015-2026
+  New: Add AMED belt data (3yr history from amed_history)
+       Backfill amed_belt_volume_mt in
+       price_history_training table using
+       AMED historical harvest forecast
+
+Target accuracy after AMED features:
+  Dry Grapes: MAPE from 36.38% → target below 25%
+  Pomegranate: MAPE from 16.54% → target below 14%
+
+────────────────────────────────────────────────────────────────
+5.4 RETRAINING PROCEDURE
+────────────────────────────────────────────────────────────────
+
+Step 1: Load AMED 3yr historical belt data
+Step 2: Join with price_history_training on week/year
+Step 3: Backfill AMED features for historical rows
+Step 4: Retrain log-ARIMAX with new features
+Step 5: Compare MAPE on 2025-2026 test set
+Step 6: If improved → save new model pickle
+Step 7: If not improved → keep existing model + log reason
+Step 8: Save as data/models/arima_dry_grapes_v2.pkl
+
+═══════════════════════════════════════════════════════════════
+SECTION 6 — ADVISORY ENGINE ENHANCEMENTS (M6)
+═══════════════════════════════════════════════════════════════
+
+────────────────────────────────────────────────────────────────
+6.1 HARVEST WINDOW PREDICTION (improved)
+────────────────────────────────────────────────────────────────
+
+CURRENT:
+  harvest_window = today + (NDVI declining trend estimate)
+  Accuracy: ±5-7 days
+
+NEW WITH AMED:
+  Primary: harvest_date_predicted from AMED
+  Refined by: NDVI trend from Sentinel-2
+  
+  Logic:
+  amed_harvest = amed_reading.harvest_date_predicted
+  ndvi_adjustment = calculate_ndvi_offset(
+    current_ndvi, ndvi_30day_trend)
+  
+  If NDVI declining normally:
+    harvest_window_start = amed_harvest - 3 days
+    harvest_window_end = amed_harvest + 4 days
+  If NDVI declining faster than expected:
+    harvest_window_start = amed_harvest - 7 days
+    harvest_window_end = amed_harvest - 1 day
+  If NDVI not yet declining:
+    harvest_window_start = amed_harvest
+    harvest_window_end = amed_harvest + 10 days
+  
+  harvest_source = 'amed_confirmed'
+  harvest_confidence = amed_confidence x ndvi_quality_factor
+  
+  Accuracy target: ±2-3 days (vs current ±5-7 days)
+
+────────────────────────────────────────────────────────────────
+6.2 CROP VERIFICATION
+────────────────────────────────────────────────────────────────
+
+After AMED fetch — check for mismatches:
+
+  If amed_crop_type != farmer.current_crop:
+    Set farm_plots.crop_type_mismatch = true
+    Create alert in Alerts screen:
+      "Crop mismatch: Ramesh Patil registered as
+       Grapes but AMED detects Pomegranate"
+    Do NOT change farmer's registered crop
+    Flag for agent to verify in field
+
+  If |amed_field_size - farm_plots.area_acres| > 20%:
+    Set farm_plots.area_mismatch_pct = X%
+    Create alert:
+      "Area mismatch: Ramesh Patil registered 3.2 acres
+       but AMED detects 5.1 acres"
+
+────────────────────────────────────────────────────────────────
+6.3 CLAUDE LLM PROMPT ENHANCEMENT
+────────────────────────────────────────────────────────────────
+
+Updated advisory prompt — adds AMED context:
+
+"""
+You are an expert viticulture agronomist for
+Maharashtra Sangli belt grapes.
+
+FARM DATA (AMED confirmed):
+  Crop: {amed_crop_type} (confidence {amed_confidence}%)
+  Field size: {amed_field_size_acres} acres
+  Sowing date: {amed_sowing_date}
+  Predicted harvest: {amed_harvest_date}
+  Growth stage: {amed_growth_stage}
+  Last irrigation: {amed_last_event_date}
+  3-year avg harvest: {amed_avg_harvest_date}
+
+SATELLITE HEALTH (Sentinel-2):
+  NDVI: {ndvi} | RECI: {reci} | NDWI: {ndwi}
+  LAI: {lai} | NPP anomaly: {npp_anomaly}%
+  Prithvi vigour: {prithvi_vigour}
+  Prithvi stress: {prithvi_stress}
+  Phenology: {prithvi_phenology}
+
+REGIONAL CONTEXT (AMED belt data):
+  Belt harvest this week: {belt_volume_mt} MT
+  Belt harvest next week: {belt_volume_next_mt} MT
+  Regional health good: {health_pct_good}%
+  Farms actively harvesting: {fields_harvesting}
+
+MARKET (ARIMA + AMED enhanced):
+  Current price: ₹{current_price}/kg
+  3-day prediction: ₹{pred_day1}, ₹{pred_day2}, ₹{pred_day3}
+  Model confidence: {model_confidence}%
+  Supply pressure: {supply_pressure} (high/medium/low)
+
+WEATHER (Open-Meteo):
+  {weather_forecast_7day}
+
+Provide:
+1. Spray advisory (SPRAY NOW / DELAY / AVOID + reason)
+2. Harvest window (start date to end date)
+3. Yield prediction (kg/acre range + confidence)
+4. Grade prediction (A/B/C + reasoning)
+5. Market timing (sell now / hold X days + reason)
+6. One critical alert if any (disease risk, weather risk,
+   market risk)
+Be specific to Sangli belt Thompson Seedless conditions.
+"""
+
+═══════════════════════════════════════════════════════════════
+SECTION 7 — 6-AGENT SWARM BUILD PLAN
+═══════════════════════════════════════════════════════════════
+
+All 6 agents run in PARALLEL in Claude Code Max.
+Each agent works on a different component.
+No agent waits for another — all start simultaneously.
+
+────────────────────────────────────────────────────────────────
+AGENT 1 — AMED Integration Agent
+────────────────────────────────────────────────────────────────
+
+ROLE: Build the AMED client and mock data layer
+
+FILES TO CREATE:
+  geo/amed_client.py       — main AMED client
+  geo/amed_mock.py         — mock data generator
+  geo/amed_live.py         — live API (stub for now)
+
+AMED CLIENT INTERFACE:
+  class AMEDClient:
+    def get_field_data(polygon, plot_id) -> AMEDFieldResponse
+    def get_belt_data(bbox, crop_type) -> AMEDBeltResponse
+    def get_historical_data(bbox, seasons) -> AMEDHistoryResponse
+    def _use_mock() -> bool  # reads AMED_USE_MOCK from env
+
+MOCK DATA RULES:
+  For each farm in farmers table:
+    Crop matches current_crop field
+    Harvest date = realistic for Sangli belt:
+      Grapes: April 15-May 10 2026
+      Pomegranate: August-February
+    Sowing date = 120-150 days before harvest
+    3yr history = consistent crop type
+    Confidence = 0.85-0.95
+  
+  Belt data for Tasgaon/Sangli:
+    2847 total grape fields
+    8234 total acres
+    Harvest peak: week of April 14 2026 (680 MT)
+    Health: 63% good, 24% moderate, 10% stressed, 3% critical
+
+ADD TO .env:
+  AMED_USE_MOCK=true
+  AMED_API_KEY=
+  AMED_BBOX_TASGAON_NORTH=17.2
+  AMED_BBOX_TASGAON_SOUTH=16.8
+  AMED_BBOX_TASGAON_EAST=74.8
+  AMED_BBOX_TASGAON_WEST=74.3
+
+TESTS:
+  test_amed_client.py
+  Test field query returns crop type and harvest date
+  Test belt query returns volume forecast
+  Test mock vs live switch
+  Test fallback when API unavailable
+
+────────────────────────────────────────────────────────────────
+AGENT 2 — Database Agent
+────────────────────────────────────────────────────────────────
+
+ROLE: Create new tables and alter existing ones
+
+TASKS:
+  1. Create amed_readings table
+  2. Create amed_belt_data table
+  3. Create amed_history table
+  4. ALTER farm_plots — add amed columns
+  5. ALTER advisories/spray_advisories — add harvest columns
+  6. ALTER price_history_training — add amed feature columns
+
+Use exact DDL from Section 3 of this SDD.
+Create all tables via Supabase REST API or SQL editor.
+Verify all foreign keys resolve correctly.
+Seed amed_history with 3 years of mock Tasgaon belt data.
+
+MOCK HISTORY DATA TO SEED:
+  Season 2022-23:
+    region: Tasgaon_Sangli_belt
+    crop_type: Grapes
+    harvest_start: 2023-04-01
+    harvest_peak: 2023-04-21
+    harvest_end: 2023-05-15
+    total_area_acres: 7890
+    estimated_volume_mt: 11420
+    avg_price_modal_kg: 118.50
+
+  Season 2023-24:
+    harvest_start: 2024-04-05
+    harvest_peak: 2024-04-19
+    harvest_end: 2024-05-10
+    total_area_acres: 8012
+    estimated_volume_mt: 11680
+    avg_price_modal_kg: 134.20
+
+  Season 2024-25:
+    harvest_start: 2025-03-28
+    harvest_peak: 2025-04-14
+    harvest_end: 2025-05-08
+    total_area_acres: 8180
+    estimated_volume_mt: 11890
+    avg_price_modal_kg: 298.40
+    (Note: 2025 price spike season)
+
+TESTS:
+  Verify all 3 new tables created
+  Verify all ALTER statements succeeded
+  Verify foreign keys work
+  Verify mock history data inserted
+
+────────────────────────────────────────────────────────────────
+AGENT 3 — Pipeline Redesign Agent
+────────────────────────────────────────────────────────────────
+
+ROLE: Redesign M3 pipeline to use AMED as primary
+
+FILE TO MODIFY:
+  pipelines/ndvi_pipeline.py
+
+REVISED PIPELINE SEQUENCE:
+  async def run_full_pipeline(farmer_id):
+
+    Step 1: Fetch AMED field data (PRIMARY)
+      amed = AMEDClient()
+      amed_data = amed.get_field_data(
+        polygon=plot.boundary_polygon,
+        plot_id=plot.id
+      )
+      Store in amed_readings table
+      Check crop mismatch vs registered crop
+      Check area mismatch vs registered acres
+      Flag mismatches in farm_plots table
+
+    Step 2: Fetch AMED belt data (every 14 days)
+      if days_since_last_belt_fetch >= 14:
+        belt_data = amed.get_belt_data(
+          bbox=TASGAON_BBOX,
+          crop_type='Grapes'
+        )
+        Store in amed_belt_data table
+
+    Step 3: Fetch Sentinel-2 (SECONDARY)
+      [existing Copernicus code — unchanged]
+      Compute NDVI, RECI, NDWI, LAI, NPP
+      Run Prithvi inference
+      Fetch GEE NPP anomaly
+
+    Step 4: Combine AMED + Sentinel-2
+      harvest_window_start,end = calculate_harvest_window(
+        amed_harvest_date,
+        ndvi_30day_trend,
+        amed_confidence
+      )
+      combined_health = merge_signals(
+        amed_growth_stage, ndvi_mean, reci, ndwi
+      )
+
+    Step 5: Generate advisory (pass to M6)
+      [existing advisory engine call
+       with additional AMED context]
+
+FALLBACK:
+  If AMED fails → log error → continue with
+  Sentinel-2 only → set harvest_source='ndvi_estimate'
+
+CACHING:
+  AMED refreshes every 14 days
+  Cache AMED response in amed_readings
+  Only call AMED API if last fetch > 14 days ago
+  Use cached data otherwise (saves API quota)
+
+TESTS:
+  test_revised_pipeline.py
+  Test pipeline runs with AMED mock
+  Test fallback when AMED unavailable
+  Test crop mismatch detection
+  Test harvest window calculation
+  Test 14-day cache logic
+
+────────────────────────────────────────────────────────────────
+AGENT 4 — Historical Data Agent
+────────────────────────────────────────────────────────────────
+
+ROLE: Load AMED historical data and backfill
+      price_history_training with AMED features
+
+FILE TO CREATE:
+  scripts/load_amed_history.py
+
+TASKS:
+
+  Task 1 — Load AMED belt history (mock 3 seasons):
+    Call AMEDClient.get_historical_data() for:
+      Tasgaon/Sangli bbox
+      Seasons: 2022-23, 2023-24, 2024-25
+    Store in amed_history table
+    (Agent 2 seeds this data)
+
+  Task 2 — Backfill price_history_training:
+    For each row in price_history_training:
+      Match arrival_date to amed_history
+        by season_year and week_number
+      Set amed_belt_volume_mt =
+        proportional weekly volume from seasonal total
+      Set amed_fields_harvesting =
+        estimated from weekly volume / avg farm yield
+      Set amed_health_pct_good =
+        from amed_history health distribution
+      Set amed_season_week =
+        week number within harvest season (1=first week)
+    
+    Calculation:
+      season_total_mt = amed_history.estimated_total_volume_mt
+      harvest_weeks = weeks between harvest_start and harvest_end
+      weekly_base = season_total_mt / harvest_weeks
+      
+      Apply bell curve distribution:
+        Peak week = harvest_peak_date week
+        Weeks before peak: ramp up
+        Weeks after peak: ramp down
+      
+      This creates realistic arrival curve
+      not flat weekly average
+
+  Task 3 — Verify backfill:
+    Print report:
+      Rows updated with AMED features
+      Date range covered
+      % of rows with all AMED features populated
+
+TESTS:
+  test_amed_history_load.py
+  Test all 3 seasons loaded to amed_history
+  Test backfill covers 2022-2026
+  Test weekly distribution sums to season total
+
+────────────────────────────────────────────────────────────────
+AGENT 5 — ML Model Agent
+────────────────────────────────────────────────────────────────
+
+ROLE: Retrain price prediction model with AMED features
+
+FILE TO MODIFY:
+  utils/price_prediction.py
+  scripts/train_price_model.py (create if not exists)
+
+NEW MODEL FEATURES (add to existing ARIMAX):
+  Existing features (keep all):
+    price_lag_1, price_lag_7, price_lag_14
+    arrivals_lag_1, arrivals_7day_avg
+    season_week, month, year
+    price_yoy, arrivals_yoy
+
+  New AMED features (add):
+    amed_belt_volume_mt      (this week forecast)
+    amed_belt_volume_mt_lag1 (next week forecast)
+    amed_belt_volume_mt_lag2 (week after forecast)
+    amed_fields_harvesting   (supply pressure proxy)
+    amed_health_pct_good     (quality proxy)
+    amed_season_timing_dev   (days early/late vs avg)
+      = arrival_date - historical_avg_harvest_date
+        for same season week
+
+RETRAINING STEPS:
+  1. Load price_history_training with AMED features
+     (backfilled by Agent 4)
+  2. Split: 2015-2024 train, 2025-2026 test
+  3. Try these models for Dry Grapes:
+     a. log-ARIMAX + existing features (baseline)
+     b. log-ARIMAX + AMED features (new)
+     c. Random Forest + all features
+  4. Compare MAPE on test set
+  5. Select best model for each commodity
+  6. Save as:
+     data/models/arima_dry_grapes_v2.pkl
+     data/models/arima_pomegranate_v2.pkl
+  7. Keep v1 models as fallback
+
+ACCURACY TARGETS:
+  Dry Grapes: MAPE below 25% (from 36.38%)
+  Pomegranate: MAPE below 14% (from 16.54%)
+
+UPDATE predict_price() FUNCTION:
+  Add correspondent_arrivals parameter (existing)
+  Add belt_volume_forecast parameter (new — from AMED)
+  If belt_volume_forecast provided:
+    Use as leading indicator
+    Improves short-term accuracy significantly
+  If not provided:
+    Use auto-forecast from amed_belt_data table
+
+UPDATED CLAUDE LLM REASONING:
+  Pass belt volume forecast to Claude prompt
+  Claude incorporates supply-demand analysis
+  into price recommendation
+
+TESTS:
+  test_price_model_v2.py
+  Compare v1 vs v2 MAPE on test set
+  Test predict_price with belt_volume parameter
+  Test auto-forecast fallback
+  Verify confidence intervals are correct
+
+────────────────────────────────────────────────────────────────
+AGENT 6 — Dashboard Agent
+────────────────────────────────────────────────────────────────
+
+ROLE: Update WPF admin dashboard to show AMED data
+
+FILES TO MODIFY:
+  admin_wpf/Views/FarmerDetailView.xaml
+  admin_wpf/ViewModels/FarmerDetailViewModel.cs
+  admin_wpf/Views/AlertsView.xaml
+  admin_wpf/ViewModels/AlertsViewModel.cs
+  admin_wpf/Views/DashboardView.xaml
+  admin_wpf/ViewModels/DashboardViewModel.cs
+  admin_wpf/Services/SupabaseService.cs
+
+FILES TO CREATE:
+  admin_wpf/Views/BeltIntelligenceView.xaml
+  admin_wpf/ViewModels/BeltIntelligenceViewModel.cs
+
+CHANGE 1 — Farmer Detail screen:
+  Add new section "AMED Intelligence":
+    AMED crop type + confidence badge
+    AMED field size (vs farmer registered size)
+    Mismatch warning if crop/area differs
+    AMED sowing date
+    AMED predicted harvest date
+    AMED growth stage
+    Last irrigation detected
+    3-year crop history table:
+      Season | Crop | Sowing | Harvest | Acres
+
+CHANGE 2 — Alerts screen:
+  Add new alert category: "AMED Mismatches"
+    Crop type mismatch alerts
+    Area mismatch alerts (>20% difference)
+  Separate from NDVI deterioration alerts
+  Show count badge for each category
+
+CHANGE 3 — Dashboard screen:
+  Add belt intelligence cards:
+    "Tasgaon Belt — This Week"
+    Estimated arrivals: 680 MT
+    Fields harvesting: 467
+    Belt health: 63% good
+    Price pressure: HIGH (red)
+
+NEW SCREEN — Belt Intelligence:
+  Add to sidebar between Analytics and Drone Operations
+  Title: "Belt Intelligence"
+  
+  TOP CARDS:
+    Total grape fields in belt: 2,847
+    Total belt area: 8,234 acres
+    This week arrivals forecast: X MT
+    Next week forecast: X MT
+    Belt health good %: X%
+    Price pressure indicator: HIGH/MEDIUM/LOW
+
+  HARVEST VOLUME FORECAST CHART (LiveCharts2):
+    4-week bar chart
+    Gold bars = AMED forecast volume MT per week
+    Dashed line = historical average volume
+    Label each bar with week date and MT
+    Click bar = shows farms harvesting that week
+
+  BELT HEALTH DISTRIBUTION:
+    Stacked bar chart per week
+    Green = good, yellow = moderate,
+    orange = stressed, red = critical
+
+  HISTORICAL COMPARISON TABLE:
+    Season | Peak week | Peak volume MT | Avg price ₹/kg
+    2022-23 | Apr 21 | 680 MT | ₹118/kg
+    2023-24 | Apr 19 | 695 MT | ₹134/kg
+    2024-25 | Apr 14 | 820 MT | ₹298/kg
+    2025-26 | Apr 14 | 680 MT (forecast) | ₹??? (predict)
+
+  MISMATCH REPORT TABLE:
+    Farms where AMED detected different crop or area
+    Farmer | Registered | AMED Detected | Diff % | Action
+
+  DATA REFRESH INFO:
+    AMED last refreshed: [date]
+    Next refresh: [date + 14 days]
+    [Manual refresh] button
+
+ADD to SupabaseService.cs:
+  GetAMEDReadings(farmerId) → amed_readings
+  GetBeltData(region, weeks) → amed_belt_data
+  GetAMEDHistory(region) → amed_history
+  GetCropMismatches() → farm_plots where mismatch=true
+
+TESTS:
+  Farmer detail shows AMED section
+  Belt Intelligence screen loads
+  Mismatch alerts show in Alerts screen
+  Dashboard belt cards update
+
+═══════════════════════════════════════════════════════════════
+SECTION 8 — SWARM BUILD INSTRUCTION FOR CLAUDE CODE
+═══════════════════════════════════════════════════════════════
+
+PASTE THIS ENTIRE BLOCK INTO CLAUDE CODE MAX:
+
+Read the complete SDD at the top of this conversation
+for full context on AMED integration design.
+
+Launch 6 parallel sub-agents simultaneously.
+Each agent works independently on its component.
+All agents start at the same time.
+
+AGENT 1 — AMED Integration:
+  Build geo/amed_client.py, geo/amed_mock.py,
+  geo/amed_live.py as specified in SDD Section 2.
+  Mock data for 102 seeded farmers + belt data.
+  Add AMED_USE_MOCK and AMED_API_KEY to .env
+
+AGENT 2 — Database:
+  Create 3 new tables and alter 3 existing tables
+  as specified in SDD Section 3.
+  Seed amed_history with 3 seasons mock data.
+
+AGENT 3 — Pipeline Redesign:
+  Modify pipelines/ndvi_pipeline.py to use AMED
+  as primary as specified in SDD Section 4.
+  AMED first, then Sentinel-2, with fallback logic.
+  Add 14-day cache for AMED calls.
+
+AGENT 4 — Historical Data:
+  Create scripts/load_amed_history.py.
+  Backfill price_history_training with AMED features
+  as specified in SDD Section 4 Agent 4.
+  Bell curve distribution for weekly volumes.
+
+AGENT 5 — ML Model:
+  Retrain price models with new AMED features.
+  Save as v2 models. Target MAPE below 25% dry grapes.
+  Update predict_price() as in SDD Section 5.
+
+AGENT 6 — Dashboard:
+  Update WPF app: farmer detail, alerts, dashboard.
+  Create Belt Intelligence screen.
+  Add GetAMEDReadings etc to SupabaseService.cs
+  As specified in SDD Section 7 Agent 6.
+
+INTEGRATION POINT (run after all 6 agents complete):
+  Run: python -m pytest tests/ -v
+  Run: dotnet build admin_wpf/ShetMitraAdmin.csproj
+  Run: python -m uvicorn main:app --reload
+  Verify pipeline completes end-to-end with mock AMED data.
+  Report: accuracy improvements, any remaining errors.
+
+═══════════════════════════════════════════════════════════════
+SECTION 9 — ACCURACY TARGETS AND SUCCESS CRITERIA
+═══════════════════════════════════════════════════════════════
+
+BUILD SUCCESS CRITERIA:
+
+  Pipeline:
+    ✅ AMED fetch completes for all 102 farms
+    ✅ Belt data fetched and stored
+    ✅ Fallback to Sentinel-2 works if AMED fails
+    ✅ Crop mismatches detected and flagged
+    ✅ 14-day cache working correctly
+
+  ML Model:
+    ✅ Dry Grapes MAPE improved below 25%
+    ✅ Pomegranate MAPE maintained below 17%
+    ✅ predict_price() works with belt_volume param
+    ✅ v1 models kept as fallback
+
+  Dashboard:
+    ✅ Farmer detail shows AMED section
+    ✅ Belt Intelligence screen loads
+    ✅ Mismatch alerts visible
+    ✅ dotnet build 0 errors
+
+  Accuracy improvements (targets):
+    Yield prediction: 65-75% → 78-86%
+    Grade prediction: 65-75% → 78-86%
+    Price prediction: 63% → 75-82% (dry grapes)
+    Harvest window:   ±5-7 days → ±2-3 days
+
+═══════════════════════════════════════════════════════════════
+SECTION 10 — WHEN REAL AMED KEY ARRIVES
+═══════════════════════════════════════════════════════════════
+
+Only ONE change needed to go live:
+
+In .env file change:
+  AMED_USE_MOCK=true
+  → AMED_USE_MOCK=false
+
+And add the real key:
+  AMED_API_KEY=your_real_key_here
+
+Everything else is already built.
+No code changes needed.
+No redeployment needed.
+Pipeline will automatically use live AMED on next run.
+
+═══════════════════════════════════════════════════════════════
+END OF SYSTEM DESIGN DOCUMENT
+Sahyadri Krushi Intelligence — Confidential
+═══════════════════════════════════════════════════════════════

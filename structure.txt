@@ -1,0 +1,106 @@
+Folder PATH listing for volume Windows
+Volume serial number is 3E9D-5BFC
+C:.
+¦   analysis.html
+¦   config.py
+¦   logo.svg
+¦   main.py
+¦   report.html
+¦   requirements.txt
+¦   run_daily.py
+¦   structure.txt
+¦   test_intelligence.py
+¦   
++---assets
+¦       logo.svg
+¦       
++---engine
+¦   ¦   advisory.py
+¦   ¦   decision_engine.py
+¦   ¦   
+¦   +---__pycache__
+¦           advisory.cpython-314.pyc
+¦           decision_engine.cpython-311.pyc
+¦           decision_engine.cpython-314.pyc
+¦           
++---ingestion
+¦       agmarknet_api.py
+¦       
++---routes
+¦   ¦   mandi.py
+¦   ¦   __init__.py
+¦   ¦   
+¦   +---__pycache__
+¦           mandi.cpython-314.pyc
+¦           mandi_routes.cpython-311.pyc
+¦           mandi_routes.cpython-314.pyc
+¦           __init__.cpython-314.pyc
+¦           
++---services
+¦   ¦   agremo_mock.py
+¦   ¦   ceda_service.py
+¦   ¦   db.py
+¦   ¦   geo_service.py
+¦   ¦   intelligence.py
+¦   ¦   location_service.py
+¦   ¦   optimization.py
+¦   ¦   report_generator.py
+¦   ¦   sentinel.py
+¦   ¦   variety_service.py
+¦   ¦   weather.py
+¦   ¦   __init__.py
+¦   ¦   
+¦   +---__pycache__
+¦           agremo_mock.cpython-314.pyc
+¦           ceda_service.cpython-314.pyc
+¦           db.cpython-314.pyc
+¦           geo_service.cpython-314.pyc
+¦           intelligence.cpython-314.pyc
+¦           location_service.cpython-314.pyc
+¦           optimization.cpython-311.pyc
+¦           optimization.cpython-314.pyc
+¦           report_generator.cpython-314.pyc
+¦           variety_service.cpython-314.pyc
+¦           weather.cpython-314.pyc
+¦           __init__.cpython-314.pyc
+¦           
++---shet_mitra
+¦   ¦   .env
+¦   ¦   requirements.txt
+¦   ¦   
+¦   +---app
+¦       ¦   main.py
+¦       ¦   
+¦       +---core
+¦       ¦       config.py
+¦       ¦       db.py
+¦       ¦       
+¦       +---models
+¦       ¦       schemas.py
+¦       ¦       
+¦       +---services
+¦               render_service.py
+¦               report_builder.py
+¦               utils.py
+¦               
++---templates
+¦       report.html
+¦       
++---test
+¦       test_report.py
+¦       
++---utils
+¦   ¦   alerts.py
+¦   ¦   distance.py
+¦   ¦   formatter.py
+¦   ¦   
+¦   +---__pycache__
+¦           alerts.cpython-314.pyc
+¦           distance.cpython-311.pyc
+¦           
++---__pycache__
+        config.cpython-311.pyc
+        config.cpython-314.pyc
+        main.cpython-311.pyc
+        main.cpython-314.pyc
+        

@@ -1,0 +1,8 @@
+{
+  "_note": "Source of truth for Razorpay plan creation. Apply via Razorpay dashboard or scripts/create_razorpay_plans.py --apply (offline by default).",
+  "plans": [
+    {"local_id": "trader_basic", "amount_paise": 300000, "interval": "monthly", "description": "ShetMitra Trader Intelligence Basic"},
+    {"local_id": "trader_standard", "amount_paise": 700000, "interval": "monthly", "description": "ShetMitra Trader Intelligence Standard"},
+    {"local_id": "trader_premium", "amount_paise": 1500000, "interval": "monthly", "description": "ShetMitra Trader Intelligence Premium"}
+  ]
+}

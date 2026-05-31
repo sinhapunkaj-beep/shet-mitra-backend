@@ -1,0 +1,187 @@
+<UserControl x:Class="ShetMitraAdmin.Views.DashboardView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:ShetMitraAdmin.ViewModels"
+             d:DataContext="{d:DesignInstance Type=vm:DashboardViewModel, IsDesignTimeCreatable=True}"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             Background="{StaticResource SurfaceBg}">
+    <UserControl.DataContext>
+        <vm:DashboardViewModel />
+    </UserControl.DataContext>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16">
+        <StackPanel>
+            <TextBlock Text="Dashboard"
+                       FontSize="26"
+                       FontWeight="Bold"
+                       Foreground="{StaticResource TextPrimary}"
+                       Margin="8,8,0,16" />
+
+            <UniformGrid Columns="3" Rows="1">
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="Total Farmers" Style="{StaticResource CardTitle}" />
+                        <TextBlock Text="{Binding TotalFarmers}" Style="{StaticResource CardValue}" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="Active Advisories" Style="{StaticResource CardTitle}" />
+                        <TextBlock Text="{Binding ActiveAdvisories}" Style="{StaticResource CardValue}" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="Open Alerts" Style="{StaticResource CardTitle}" />
+                        <TextBlock Text="{Binding OpenAlerts}" Style="{StaticResource CardValue}" />
+                    </StackPanel>
+                </Border>
+            </UniformGrid>
+
+            <!-- Row 2: variety collection card (May 2026 spec) -->
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                        <DockPanel LastChildFill="False">
+                            <TextBlock DockPanel.Dock="Left"
+                                       Text="Variety Collection"
+                                       Style="{StaticResource CardTitle}" />
+                            <Border DockPanel.Dock="Right"
+                                    Background="#F57C00"
+                                    CornerRadius="4"
+                                    Padding="6,2"
+                                    Visibility="{Binding VarietyAgentBadgeVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <TextBlock Foreground="White"
+                                           FontSize="11"
+                                           FontWeight="SemiBold">
+                                    <Run Text="Agent visit needed: " />
+                                    <Run Text="{Binding VarietyAgentRequired}" />
+                                </TextBlock>
+                            </Border>
+                        </DockPanel>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                            <TextBlock Text="{Binding VarietyCollected}" Style="{StaticResource CardValue}" />
+                            <TextBlock Text=" / "
+                                       Foreground="{StaticResource TextMuted}"
+                                       FontSize="20"
+                                       VerticalAlignment="Center"
+                                       Margin="6,4,6,0" />
+                            <TextBlock Text="{Binding VarietyTotal}"
+                                       FontSize="20"
+                                       Foreground="{StaticResource TextMuted}"
+                                       VerticalAlignment="Center"
+                                       Margin="0,4,0,0" />
+                            <TextBlock Text=" farmers"
+                                       FontSize="14"
+                                       Foreground="{StaticResource TextMuted}"
+                                       VerticalAlignment="Center"
+                                       Margin="6,6,0,0" />
+                        </StackPanel>
+
+                        <TextBlock Foreground="{StaticResource TextMuted}"
+                                   FontSize="12"
+                                   Margin="0,4,0,8">
+                            <Run Text="{Binding VarietyAwaiting}" />
+                            <Run Text=" awaiting reply · " />
+                            <Run Text="{Binding VarietyAgentRequired}" />
+                            <Run Text=" need agent visit" />
+                        </TextBlock>
+
+                    <ProgressBar Minimum="0"
+                                 Maximum="100"
+                                 Value="{Binding VarietyProgressPct, Mode=OneWay}"
+                                 Height="10"
+                                 Foreground="#2E7D32"
+                                 Background="#E0E0E0"
+                                 BorderThickness="0" />
+                </StackPanel>
+            </Border>
+
+            <!-- Mango stat card (May 2026 — Mango Agent 8 §9.5) -->
+            <Border Style="{StaticResource Card}"
+                    BorderBrush="#FFB300"
+                    BorderThickness="1">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="Mango farms" Style="{StaticResource CardTitle}" />
+                        <TextBlock Text="{Binding MangoTotalFarms}" Style="{StaticResource CardValue}" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Text="Bearing year" Style="{StaticResource CardTitle}" />
+                        <Border HorizontalAlignment="Left"
+                                CornerRadius="6"
+                                Padding="10,4"
+                                Margin="0,4,0,0"
+                                Background="{Binding MangoBearingYear, Converter={StaticResource BearingToBrushConverter}}">
+                            <TextBlock Text="{Binding MangoBearingYear}"
+                                       Foreground="#1B1B1B"
+                                       FontSize="20"
+                                       FontWeight="Bold" />
+                        </Border>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Text="This-week belt volume (MT)" Style="{StaticResource CardTitle}" />
+                        <TextBlock Text="{Binding MangoThisWeekVolumeMt, StringFormat={}{0:0}}" Style="{StaticResource CardValue}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <TextBlock Text="Belt Intelligence"
+                       FontSize="18"
+                       FontWeight="SemiBold"
+                       Margin="8,24,0,8" />
+
+            <Border Style="{StaticResource Card}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <DockPanel Grid.Row="0" LastChildFill="False" Margin="0,0,0,12">
+                        <TextBlock DockPanel.Dock="Left"
+                                   Text="{Binding BeltCardTitle}"
+                                   FontSize="16"
+                                   FontWeight="SemiBold" />
+                        <Border DockPanel.Dock="Right"
+                                Background="{Binding BeltPricePressure, Converter={StaticResource PricePressureToBrushConverter}}"
+                                CornerRadius="4"
+                                Padding="8,4">
+                            <TextBlock Foreground="White"
+                                       FontWeight="Bold"
+                                       FontSize="12">
+                                <Run Text="Price pressure: " />
+                                <Run Text="{Binding BeltPricePressure}" />
+                            </TextBlock>
+                        </Border>
+                    </DockPanel>
+
+                    <UniformGrid Grid.Row="1" Columns="3" Rows="1">
+                        <StackPanel Margin="0,8,16,0">
+                            <TextBlock Text="Estimated arrivals (MT)" Style="{StaticResource CardTitle}" />
+                            <TextBlock Text="{Binding BeltEstimatedArrivalsMt, StringFormat={}{0:0}}" Style="{StaticResource CardValue}" />
+                        </StackPanel>
+                        <StackPanel Margin="0,8,16,0">
+                            <TextBlock Text="Fields harvesting" Style="{StaticResource CardTitle}" />
+                            <TextBlock Text="{Binding BeltFieldsHarvesting}" Style="{StaticResource CardValue}" />
+                        </StackPanel>
+                        <StackPanel Margin="0,8,0,0">
+                            <TextBlock Text="Belt health (good)" Style="{StaticResource CardTitle}" />
+                            <TextBlock Text="{Binding BeltHealthGoodPct, StringFormat={}{0:0}%}" Style="{StaticResource CardValue}" />
+                        </StackPanel>
+                    </UniformGrid>
+                </Grid>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
