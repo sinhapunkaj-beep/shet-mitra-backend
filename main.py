@@ -112,6 +112,28 @@ try:
 except ImportError as exc:
     logger.warning("api.webhooks_booking not mounted: %s", exc)
 
+# ---------------------------------------------------------------------------
+# Bagaan Sathi marketplace + GI + regions routers (Agents 6, 7).
+# ---------------------------------------------------------------------------
+
+try:
+    from routes.marketplace import router as marketplace_router
+    app.include_router(marketplace_router)
+except ImportError as exc:
+    logger.warning("routes.marketplace not mounted: %s", exc)
+
+try:
+    from routes.regions import router as regions_router
+    app.include_router(regions_router)
+except ImportError as exc:
+    logger.warning("routes.regions not mounted: %s", exc)
+
+try:
+    from routes.gi import router as gi_router
+    app.include_router(gi_router)
+except ImportError as exc:
+    logger.warning("routes.gi not mounted: %s", exc)
+
 
 @app.get("/")
 def home():

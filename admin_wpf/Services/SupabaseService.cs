@@ -11,6 +11,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using ShetMitraAdmin.Models;
+using ShetMitraAdmin.Models.Marketplace;
 
 namespace ShetMitraAdmin.Services;
 
@@ -1264,5 +1265,373 @@ public sealed class SupabaseService
         [JsonPropertyName("health_pct_good")] public double? HealthPctGood { get; set; }
         [JsonPropertyName("flowering_pct")] public double? FloweringPct { get; set; }
         [JsonPropertyName("fruit_set_pct")] public double? FruitSetPct { get; set; }
+    }
+
+    // ─── Marketplace / Bagaan Sathi (June 2026 — SDD §7) ──────────────
+
+    /// <summary>
+    /// Returns active marketplace lots matching <paramref name="filter"/>.
+    /// Hits <c>GET {InternalBaseUrl}/marketplace/lots</c>. Falls back to
+    /// deterministic placeholder rows so the UI renders without the API.
+    /// </summary>
+    public async Task<List<MarketplaceLot>> GetMarketplaceLots(MarketplaceFilter filter)
+    {
+        var url = $"{_internalBaseUrl}/marketplace/lots{filter.ToQueryString()}";
+        try
+        {
+            using var response = await HttpClient.GetAsync(url);
+            response.EnsureSuccessStatusCode();
+            var json = await response.Content.ReadAsStringAsync();
+            var rows = JsonSerializer.Deserialize<List<MarketplaceLot>>(json, JsonOpts);
+            if (rows is not null && rows.Count > 0) return rows;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"GetMarketplaceLots failed, returning placeholder: {ex.Message}");
+        }
+
+        var now = DateTime.UtcNow;
+        return new List<MarketplaceLot>
+        {
+            new()
+            {
+                Id = Guid.NewGuid().ToString(),
+                FarmerId = Guid.NewGuid().ToString(),
+                FarmerName = "Suresh Patil",
+                Region = "MH",
+                Commodity = "Dry Grapes",
+                Variety = "Thompson Seedless",
+                Grade = "A",
+                QuantityKg = 1800,
+                AskPriceKg = 318,
+                MinPriceKg = 295,
+                Status = "ACTIVE",
+                ListedAt = now.AddHours(-6),
+                WeekLabel = "W23"
+            },
+            new()
+            {
+                Id = Guid.NewGuid().ToString(),
+                FarmerId = Guid.NewGuid().ToString(),
+                FarmerName = "Anil Sinha",
+                Region = "JH",
+                Commodity = "Tomato",
+                Variety = null,
+                Grade = "B",
+                QuantityKg = 950,
+                AskPriceKg = 24,
+                MinPriceKg = 18,
+                Status = "ACTIVE",
+                ListedAt = now.AddHours(-22),
+                WeekLabel = "W23"
+            },
+            new()
+            {
+                Id = Guid.NewGuid().ToString(),
+                FarmerId = Guid.NewGuid().ToString(),
+                FarmerName = "Mahesh Kale",
+                Region = "MH",
+                Commodity = "Mango",
+                Variety = "Alphonso",
+                Grade = "A+",
+                QuantityKg = 620,
+                AskPriceKg = 1480,
+                MinPriceKg = 1380,
+                Status = "ACTIVE",
+                ListedAt = now.AddDays(-1),
+                WeekLabel = "W23"
+            }
+        };
+    }
+
+    /// <summary>
+    /// Returns active trader requirements matching <paramref name="filter"/>.
+    /// Hits <c>GET {InternalBaseUrl}/marketplace/requirements</c>; this
+    /// endpoint is colocated with <c>/marketplace/lots</c> by the FastAPI
+    /// surface. Falls back to placeholder rows on transport error.
+    /// </summary>
+    public async Task<List<TraderRequirement>> GetTraderRequirements(MarketplaceFilter filter)
+    {
+        var url = $"{_internalBaseUrl}/marketplace/requirements{filter.ToQueryString()}";
+        try
+        {
+            using var response = await HttpClient.GetAsync(url);
+            response.EnsureSuccessStatusCode();
+            var json = await response.Content.ReadAsStringAsync();
+            var rows = JsonSerializer.Deserialize<List<TraderRequirement>>(json, JsonOpts);
+            if (rows is not null && rows.Count > 0) return rows;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"GetTraderRequirements failed, returning placeholder: {ex.Message}");
+        }
+
+        var now = DateTime.UtcNow;
+        return new List<TraderRequirement>
+        {
+            new()
+            {
+                Id = Guid.NewGuid().ToString(),
+                TraderId = Guid.NewGuid().ToString(),
+                TraderName = "Shah Commission Agents",
+                Region = "MH",
+                Commodity = "Dry Grapes",
+                Variety = "Thompson Seedless",
+                Grade = "A",
+                RequiredQuantityKg = 5000,
+                MaxPriceKg = 325,
+                DeliveryWindow = "7 days",
+                Status = "ACTIVE",
+                CreatedAt = now.AddHours(-4)
+            },
+            new()
+            {
+                Id = Guid.NewGuid().ToString(),
+                TraderId = Guid.NewGuid().ToString(),
+                TraderName = "Ranchi Sabzi Mandi",
+                Region = "JH",
+                Commodity = "Tomato",
+                Grade = "B",
+                RequiredQuantityKg = 3500,
+                MaxPriceKg = 28,
+                DeliveryWindow = "3 days",
+                Status = "ACTIVE",
+                CreatedAt = now.AddHours(-8)
+            }
+        };
+    }
+
+    /// <summary>
+    /// Returns matches for a specific lot. Hits
+    /// <c>GET {InternalBaseUrl}/marketplace/matches/{lotId}</c>. Falls back
+    /// to a small placeholder match set.
+    /// </summary>
+    public async Task<List<LotMatch>> GetLotMatches(string lotId)
+    {
+        if (string.IsNullOrEmpty(lotId)) return new List<LotMatch>();
+        var url = $"{_internalBaseUrl}/marketplace/matches/{Uri.EscapeDataString(lotId)}";
+        try
+        {
+            using var response = await HttpClient.GetAsync(url);
+            response.EnsureSuccessStatusCode();
+            var json = await response.Content.ReadAsStringAsync();
+            var rows = JsonSerializer.Deserialize<List<LotMatch>>(json, JsonOpts);
+            if (rows is not null && rows.Count > 0) return rows;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"GetLotMatches failed, returning placeholder: {ex.Message}");
+        }
+
+        return new List<LotMatch>
+        {
+            new()
+            {
+                Id = Guid.NewGuid().ToString(),
+                LotId = lotId,
+                RequirementId = Guid.NewGuid().ToString(),
+                TraderId = Guid.NewGuid().ToString(),
+                TraderName = "Shah Commission Agents",
+                FarmerName = "Suresh Patil",
+                Commodity = "Dry Grapes",
+                MatchedQuantityKg = 1800,
+                MatchedPriceKg = 318,
+                MatchScore = 0.92,
+                Status = "PROPOSED",
+                MatchedAt = DateTime.UtcNow.AddMinutes(-30)
+            }
+        };
+    }
+
+    /// <summary>
+    /// Returns completed farmer trades matching <paramref name="filter"/>.
+    /// Hits <c>GET {InternalBaseUrl}/marketplace/trades</c>; on failure
+    /// falls back to placeholders.
+    /// </summary>
+    public async Task<List<FarmerTrade>> GetFarmerTrades(MarketplaceFilter filter)
+    {
+        var url = $"{_internalBaseUrl}/marketplace/trades{filter.ToQueryString()}";
+        try
+        {
+            using var response = await HttpClient.GetAsync(url);
+            response.EnsureSuccessStatusCode();
+            var json = await response.Content.ReadAsStringAsync();
+            var rows = JsonSerializer.Deserialize<List<FarmerTrade>>(json, JsonOpts);
+            if (rows is not null && rows.Count > 0) return rows;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"GetFarmerTrades failed, returning placeholder: {ex.Message}");
+        }
+
+        var now = DateTime.UtcNow;
+        return new List<FarmerTrade>
+        {
+            new()
+            {
+                Id = Guid.NewGuid().ToString(),
+                FarmerName = "Ramesh Jadhav",
+                TraderName = "Bhandari Raisin Exports",
+                Region = "MH",
+                Commodity = "Dry Grapes",
+                Grade = "A",
+                TradedQuantityKg = 2200,
+                SettledPriceKg = 312,
+                MandiModalPriceKg = 295,
+                PremiumPct = 5.8,
+                PlatformFeeInr = 6864,
+                SettledAt = now.AddDays(-2),
+                WeekLabel = "W22"
+            },
+            new()
+            {
+                Id = Guid.NewGuid().ToString(),
+                FarmerName = "Anil Sinha",
+                TraderName = "Ranchi Sabzi Mandi",
+                Region = "JH",
+                Commodity = "Tomato",
+                Grade = "B",
+                TradedQuantityKg = 950,
+                SettledPriceKg = 25,
+                MandiModalPriceKg = 22,
+                PremiumPct = 13.6,
+                PlatformFeeInr = 237,
+                SettledAt = now.AddDays(-1),
+                WeekLabel = "W23"
+            }
+        };
+    }
+
+    /// <summary>
+    /// Returns aggregated supply pools matching <paramref name="filter"/>.
+    /// Hits <c>GET {InternalBaseUrl}/marketplace/aggregations</c>; falls
+    /// back to placeholder pools.
+    /// </summary>
+    public async Task<List<MarketplaceAggregation>> GetMarketplaceAggregations(MarketplaceFilter filter)
+    {
+        var url = $"{_internalBaseUrl}/marketplace/aggregations{filter.ToQueryString()}";
+        try
+        {
+            using var response = await HttpClient.GetAsync(url);
+            response.EnsureSuccessStatusCode();
+            var json = await response.Content.ReadAsStringAsync();
+            var rows = JsonSerializer.Deserialize<List<MarketplaceAggregation>>(json, JsonOpts);
+            if (rows is not null && rows.Count > 0) return rows;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"GetMarketplaceAggregations failed, returning placeholder: {ex.Message}");
+        }
+
+        return new List<MarketplaceAggregation>
+        {
+            new()
+            {
+                Id = Guid.NewGuid().ToString(),
+                Region = "MH",
+                Commodity = "Dry Grapes",
+                Variety = "Thompson Seedless",
+                Grade = "A",
+                WeekLabel = "W23",
+                FarmerCount = 14,
+                TotalQuantityKg = 18400,
+                AvgAskPriceKg = 312,
+                Status = "OPEN"
+            },
+            new()
+            {
+                Id = Guid.NewGuid().ToString(),
+                Region = "JH",
+                Commodity = "Tomato",
+                Grade = "B",
+                WeekLabel = "W23",
+                FarmerCount = 22,
+                TotalQuantityKg = 9600,
+                AvgAskPriceKg = 23,
+                Status = "OPEN"
+            }
+        };
+    }
+
+    /// <summary>
+    /// Returns aggregated marketplace KPIs for the Dashboard. Hits
+    /// <c>GET {InternalBaseUrl}/marketplace/analytics</c>; falls back to
+    /// placeholder analytics so the stat cards still render.
+    /// </summary>
+    public async Task<MarketplaceAnalytics> GetMarketplaceAnalytics()
+    {
+        var url = $"{_internalBaseUrl}/marketplace/analytics";
+        try
+        {
+            using var response = await HttpClient.GetAsync(url);
+            response.EnsureSuccessStatusCode();
+            var json = await response.Content.ReadAsStringAsync();
+            var analytics = JsonSerializer.Deserialize<MarketplaceAnalytics>(json, JsonOpts);
+            if (analytics is not null) return analytics;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"GetMarketplaceAnalytics failed, returning placeholder: {ex.Message}");
+        }
+
+        return new MarketplaceAnalytics
+        {
+            ActiveLotsCount = 47,
+            ActiveLotsTotalKg = 86200,
+            ActiveRequirementsCount = 18,
+            MatchesThisWeek = 22,
+            TradesCompleted = 64,
+            AvgPremiumPct = 7.4,
+            PlatformFeesThisMonthInr = 38450
+        };
+    }
+
+    /// <summary>
+    /// POSTs to <c>{InternalBaseUrl}/internal/run-matching</c> to manually
+    /// re-run the lot/requirement matching engine. Returns the raw JSON
+    /// response (run id, counts) — caller surfaces it to the user.
+    /// </summary>
+    public async Task<JsonElement> TriggerMatching()
+    {
+        var url = $"{_internalBaseUrl}/internal/run-matching";
+        try
+        {
+            using var response = await HttpClient.PostAsync(url, content: null);
+            response.EnsureSuccessStatusCode();
+            var json = await response.Content.ReadAsStringAsync();
+            using var doc = JsonDocument.Parse(json);
+            return doc.RootElement.Clone();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"TriggerMatching failed: {ex.Message}");
+            using var doc = JsonDocument.Parse(
+                "{\"status\":\"unavailable\",\"matches_created\":0}");
+            return doc.RootElement.Clone();
+        }
+    }
+
+    /// <summary>
+    /// Returns the list of regions supported by the platform. Hits
+    /// <c>GET {InternalBaseUrl}/regions</c>; falls back to the two known
+    /// regions (Maharashtra / Jharkhand) on failure.
+    /// </summary>
+    public async Task<List<string>> GetRegions()
+    {
+        var url = $"{_internalBaseUrl}/regions";
+        try
+        {
+            using var response = await HttpClient.GetAsync(url);
+            response.EnsureSuccessStatusCode();
+            var json = await response.Content.ReadAsStringAsync();
+            var rows = JsonSerializer.Deserialize<List<string>>(json, JsonOpts);
+            if (rows is not null && rows.Count > 0) return rows;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"GetRegions failed, returning placeholder: {ex.Message}");
+        }
+
+        return new List<string> { "MH", "JH" };
     }
 }

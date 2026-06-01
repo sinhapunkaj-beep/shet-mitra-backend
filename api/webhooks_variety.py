@@ -35,7 +35,8 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from api import whatsapp_db
-from api.whatsapp_sender import get_sender
+from api.whatsapp_sender import get_region_code, get_sender
+from pipelines import i18n
 
 LOG = logging.getLogger(__name__)
 
@@ -111,10 +112,40 @@ def _is_purely_numeric(text: str) -> bool:
         return False
 
 
-def _format_initial_message(farmer_name: str, amed_crop: str) -> str:
+def _resolve_language(farmer_id: Optional[str]) -> str:
+    """Return the farmer-facing message language (e.g. 'Hindi' for JH,
+    'Marathi' for MH). Falls back to Marathi when the region cannot be
+    resolved so existing MH behaviour is preserved.
+    """
+    try:
+        region_code = get_region_code(farmer_id) if farmer_id else None
+    except Exception:  # noqa: BLE001 - DB/network errors must not crash.
+        region_code = None
+    if not region_code:
+        return i18n.DEFAULT_LANGUAGE
+    return i18n.language_for_region(region_code)
+
+
+def _format_initial_message(
+    farmer_name: str, amed_crop: str, language: str = i18n.DEFAULT_LANGUAGE
+) -> str:
     examples = VARIETY_EXAMPLES.get(
         amed_crop, "(कृपया जात पाठवा / please share the variety)"
     )
+    if (language or "").strip().lower() == "hindi":
+        # JH farmers get the Hindi prompts from data/translations/hindi.json
+        # (Devanagari only; English equivalents live in english.json).
+        return (
+            f"{i18n.get_message('greeting', 'Hindi', name=farmer_name)}\n\n"
+            f"{i18n.get_message('satellite_detected', 'Hindi', crop=amed_crop)}\n"
+            f"(Satellite has detected {amed_crop} on your bagaan.)\n\n"
+            f"{i18n.get_message('please_share_details', 'Hindi')}\n"
+            f"(Please share more details:)\n\n"
+            f"1️⃣ {amed_crop} की किस्म / Variety\n"
+            f"   उदा. / e.g.:\n"
+            f"   {examples}\n\n"
+            f"{i18n.get_message('send_variety_first', 'Hindi')} / Send variety first."
+        )
     return (
         f"नमस्ते {farmer_name} ji! \U0001F33F\n\n"
         f"आमच्या उपग्रहाने तुमच्या शेतात\n"
@@ -129,7 +160,16 @@ def _format_initial_message(farmer_name: str, amed_crop: str) -> str:
     )
 
 
-def _format_variety_saved(variety: str) -> str:
+def _is_hindi(language: str) -> bool:
+    return (language or "").strip().lower() == "hindi"
+
+
+def _format_variety_saved(variety: str, language: str = i18n.DEFAULT_LANGUAGE) -> str:
+    if _is_hindi(language):
+        return (
+            f"{i18n.get_message('variety_saved', 'Hindi', variety=variety)} / Saved!\n\n"
+            "Now send your full name:"
+        )
     return (
         f"✅ {variety} नोंदवले! / Saved!\n\n"
         "आता तुमचे पूर्ण नाव पाठवा:\n"
@@ -137,7 +177,14 @@ def _format_variety_saved(variety: str) -> str:
     )
 
 
-def _format_name_saved() -> str:
+def _format_name_saved(language: str = i18n.DEFAULT_LANGUAGE) -> str:
+    if _is_hindi(language):
+        return (
+            f"{i18n.get_message('name_saved', 'Hindi')} / Name saved!\n\n"
+            f"{i18n.get_message('confirm_phone', 'Hindi')}\n"
+            "Confirm your phone number:\n"
+            "(केवल 10 अंक / 10 digits only)"
+        )
     return (
         "✅ नाव नोंदवले! / Name saved!\n\n"
         "तुमचा फोन नंबर confirm करा:\n"
@@ -146,7 +193,12 @@ def _format_name_saved() -> str:
     )
 
 
-def _format_phone_saved() -> str:
+def _format_phone_saved(language: str = i18n.DEFAULT_LANGUAGE) -> str:
+    if _is_hindi(language):
+        return (
+            f"{i18n.get_message('phone_confirmed', 'Hindi')} / Confirmed!\n\n"
+            "Send your village name:"
+        )
     return (
         "✅ नंबर confirm झाला! / Confirmed!\n\n"
         "तुमच्या गावाचे नाव पाठवा:\n"
@@ -154,7 +206,14 @@ def _format_phone_saved() -> str:
     )
 
 
-def _format_village_saved() -> str:
+def _format_village_saved(language: str = i18n.DEFAULT_LANGUAGE) -> str:
+    if _is_hindi(language):
+        return (
+            f"{i18n.get_message('village_saved', 'Hindi')} / Village saved!\n\n"
+            f"{i18n.get_message('send_farm_area_acres', 'Hindi')}\n"
+            "Send your farm area in acres:\n"
+            "(केवल संख्या / numbers only e.g. 3.5)"
+        )
     return (
         "✅ गाव नोंदवले! / Village saved!\n\n"
         "तुमच्या शेताचे एकर मध्ये क्षेत्रफळ पाठवा:\n"
@@ -164,8 +223,37 @@ def _format_village_saved() -> str:
 
 
 def _format_mismatch_prompt(
-    farmer_name: str, reported_acres: float, amed_acres: float
+    farmer_name: str,
+    reported_acres: float,
+    amed_acres: float,
+    language: str = i18n.DEFAULT_LANGUAGE,
 ) -> str:
+    if _is_hindi(language):
+        question = i18n.get_message(
+            "mismatch_acres_question",
+            "Hindi",
+            name=farmer_name,
+            reported_acres=reported_acres,
+            amed_acres=amed_acres,
+        )
+        opt1 = i18n.get_message(
+            "mismatch_option_my_acres", "Hindi", reported_acres=reported_acres
+        )
+        opt2 = i18n.get_message(
+            "mismatch_option_amed_acres", "Hindi", amed_acres=amed_acres
+        )
+        opt3 = i18n.get_message("mismatch_option_unsure", "Hindi")
+        return (
+            f"{question}\n"
+            f"(You mentioned {reported_acres} acres but\n"
+            f" satellite shows {amed_acres} acres.)\n\n"
+            f"कृपया confirm करें / Please confirm:\n"
+            f"{opt1}\n"
+            f"   (My bagaan is {reported_acres} acres)\n"
+            f"{opt2}\n"
+            f"   (My bagaan is {amed_acres} acres)\n"
+            f"{opt3} / I am not sure"
+        )
     return (
         f"{farmer_name} ji,\n"
         f"तुम्ही {reported_acres} एकर सांगितले परंतु\n"
@@ -189,7 +277,24 @@ def _format_confirmation(
     taluka: str,
     acres: float,
     phone: str,
+    language: str = i18n.DEFAULT_LANGUAGE,
 ) -> str:
+    if _is_hindi(language):
+        return (
+            f"{i18n.get_message('all_data_saved', 'Hindi')}\n"
+            "All details saved!\n\n"
+            "आपकी जानकारी / Your details:\n"
+            "━━━━━━━━━━━━━━━━━━━━\n"
+            f"\U0001F464 नाम: {name}\n"
+            f"\U0001F33F फसल: {crop} — {variety}\n"
+            f"\U0001F4CD गाँव: {village}, {taluka}\n"
+            f"\U0001F33E क्षेत्र: {acres} एकड़\n"
+            f"\U0001F4DE फोन: {phone}\n"
+            "━━━━━━━━━━━━━━━━━━━━\n\n"
+            f"{i18n.get_message('you_will_receive_daily_report', 'Hindi')}\n"
+            "From tomorrow you will receive your\n"
+            "daily bagaan report at 6 AM!"
+        )
     return (
         "✅ सर्व माहिती नोंदवली!\n"
         "All details saved!\n\n"
@@ -294,7 +399,8 @@ def start_variety_collection(
         raise ValueError(f"Farmer {farmer_id} has no mobile_number")
 
     farmer_name = farmer.get("farmer_full_name") or "Shetkari"
-    body = _format_initial_message(farmer_name, amed_crop)
+    language = _resolve_language(farmer_id)
+    body = _format_initial_message(farmer_name, amed_crop, language=language)
     send_result = _send(mobile, body)
 
     response_id = whatsapp_db.create_variety_response(
@@ -311,6 +417,7 @@ def start_variety_collection(
         "plot_id": str(plot_id),
         "variety_response_id": response_id,
         "farmer_name": farmer_name,
+        "language": language,
     }
     session = whatsapp_db.upsert_session(
         mobile,
@@ -346,6 +453,18 @@ def _advance(
     )
 
 
+def _session_language(session_data: dict, farmer_id: Optional[str]) -> str:
+    """Read the language from session_data; fall back to a live region lookup
+    for sessions started before language routing landed."""
+    lang = (session_data or {}).get("language")
+    if isinstance(lang, str) and lang.strip():
+        return lang
+    resolved = _resolve_language(farmer_id)
+    if isinstance(session_data, dict):
+        session_data["language"] = resolved
+    return resolved
+
+
 def _handle_variety(
     mobile: str, body: str, session: dict
 ) -> dict:
@@ -353,13 +472,20 @@ def _handle_variety(
     farmer_id = session["farmer_id"]
     session_data = session.get("session_data") or {}
     amed_crop = session_data.get("amed_crop", "")
+    language = _session_language(session_data, farmer_id)
 
     if variety is None:
         examples = VARIETY_EXAMPLES.get(amed_crop, "")
-        reask = (
-            "कृपया जात पाठवा / Please send the variety.\n"
-            f"उदा. / e.g.: {examples}"
-        )
+        if _is_hindi(language):
+            reask = (
+                f"{i18n.get_message('send_variety_first', 'Hindi')} / Please send the variety.\n"
+                f"उदा. / e.g.: {examples}"
+            )
+        else:
+            reask = (
+                "कृपया जात पाठवा / Please send the variety.\n"
+                f"उदा. / e.g.: {examples}"
+            )
         result = _send(mobile, reask)
         return {
             "sent": [result],
@@ -382,7 +508,7 @@ def _handle_variety(
 
     session_data["variety"] = variety
     _advance(mobile, farmer_id, Step.NAME, session_data)
-    result = _send(mobile, _format_variety_saved(variety))
+    result = _send(mobile, _format_variety_saved(variety, language=language))
     return {
         "sent": [result],
         "next_step": Step.NAME,
@@ -394,12 +520,19 @@ def _handle_name(mobile: str, body: str, session: dict) -> dict:
     name = _validate_name(body)
     farmer_id = session["farmer_id"]
     session_data = session.get("session_data") or {}
+    language = _session_language(session_data, farmer_id)
 
     if name is None:
-        reask = (
-            "कृपया तुमचे पूर्ण नाव पाठवा (किमान 3 अक्षरे).\n"
-            "Please send your full name (min 3 letters)."
-        )
+        if _is_hindi(language):
+            reask = (
+                f"{i18n.get_message('send_full_name', 'Hindi')}\n"
+                "Please send your full name (min 3 letters)."
+            )
+        else:
+            reask = (
+                "कृपया तुमचे पूर्ण नाव पाठवा (किमान 3 अक्षरे).\n"
+                "Please send your full name (min 3 letters)."
+            )
         result = _send(mobile, reask)
         return {
             "sent": [result],
@@ -421,7 +554,7 @@ def _handle_name(mobile: str, body: str, session: dict) -> dict:
 
     session_data["name"] = name
     _advance(mobile, farmer_id, Step.PHONE, session_data)
-    result = _send(mobile, _format_name_saved())
+    result = _send(mobile, _format_name_saved(language=language))
     return {
         "sent": [result],
         "next_step": Step.PHONE,
@@ -433,12 +566,19 @@ def _handle_phone(mobile: str, body: str, session: dict) -> dict:
     phone = _validate_phone(body)
     farmer_id = session["farmer_id"]
     session_data = session.get("session_data") or {}
+    language = _session_language(session_data, farmer_id)
 
     if phone is None:
-        reask = (
-            "कृपया 10 अंकी फोन नंबर पाठवा.\n"
-            "Please send a 10-digit phone number."
-        )
+        if _is_hindi(language):
+            reask = (
+                f"{i18n.get_message('confirm_phone_only_10_digits', 'Hindi')}\n"
+                "Please send a 10-digit phone number."
+            )
+        else:
+            reask = (
+                "कृपया 10 अंकी फोन नंबर पाठवा.\n"
+                "Please send a 10-digit phone number."
+            )
         result = _send(mobile, reask)
         return {
             "sent": [result],
@@ -465,7 +605,7 @@ def _handle_phone(mobile: str, body: str, session: dict) -> dict:
 
     session_data["phone"] = phone
     _advance(mobile, farmer_id, Step.VILLAGE, session_data)
-    result = _send(mobile, _format_phone_saved())
+    result = _send(mobile, _format_phone_saved(language=language))
     return {
         "sent": [result],
         "next_step": Step.VILLAGE,
@@ -477,12 +617,19 @@ def _handle_village(mobile: str, body: str, session: dict) -> dict:
     village = _validate_village(body)
     farmer_id = session["farmer_id"]
     session_data = session.get("session_data") or {}
+    language = _session_language(session_data, farmer_id)
 
     if village is None:
-        reask = (
-            "कृपया तुमच्या गावाचे नाव पाठवा.\n"
-            "Please send your village name."
-        )
+        if _is_hindi(language):
+            reask = (
+                f"{i18n.get_message('send_village_name', 'Hindi')}\n"
+                "Please send your village name."
+            )
+        else:
+            reask = (
+                "कृपया तुमच्या गावाचे नाव पाठवा.\n"
+                "Please send your village name."
+            )
         result = _send(mobile, reask)
         return {
             "sent": [result],
@@ -504,7 +651,7 @@ def _handle_village(mobile: str, body: str, session: dict) -> dict:
 
     session_data["village"] = village
     _advance(mobile, farmer_id, Step.ACRES, session_data)
-    result = _send(mobile, _format_village_saved())
+    result = _send(mobile, _format_village_saved(language=language))
     return {
         "sent": [result],
         "next_step": Step.ACRES,
@@ -517,12 +664,19 @@ def _handle_acres(mobile: str, body: str, session: dict) -> dict:
     farmer_id = session["farmer_id"]
     session_data = session.get("session_data") or {}
     plot_id = session_data.get("plot_id")
+    language = _session_language(session_data, farmer_id)
 
     if acres is None:
-        reask = (
-            "कृपया एकर मध्ये नंबर पाठवा (उदा. 3.5).\n"
-            "Please send acres as a number (e.g. 3.5)."
-        )
+        if _is_hindi(language):
+            reask = (
+                f"{i18n.get_message('area_acres_invalid', 'Hindi')}\n"
+                "Please send acres as a number (e.g. 3.5)."
+            )
+        else:
+            reask = (
+                "कृपया एकर मध्ये नंबर पाठवा (उदा. 3.5).\n"
+                "Please send acres as a number (e.g. 3.5)."
+            )
         result = _send(mobile, reask)
         return {
             "sent": [result],
@@ -573,7 +727,9 @@ def _handle_acres(mobile: str, body: str, session: dict) -> dict:
         )
         result = _send(
             mobile,
-            _format_mismatch_prompt(farmer_name, acres, amed_acres),
+            _format_mismatch_prompt(
+                farmer_name, acres, amed_acres, language=language
+            ),
         )
         return {
             "sent": [result],
@@ -619,12 +775,19 @@ def _handle_mismatch(mobile: str, body: str, session: dict) -> dict:
     choice = _parse_mismatch_choice(body)
     farmer_id = session["farmer_id"]
     session_data = session.get("session_data") or {}
+    language = _session_language(session_data, farmer_id)
 
     if choice is None:
-        reask = (
-            "कृपया 1, 2 किंवा 3 पाठवा.\n"
-            "Please reply with 1, 2 or 3."
-        )
+        if _is_hindi(language):
+            reask = (
+                "कृपया 1, 2 या 3 भेजें।\n"
+                "Please reply with 1, 2 or 3."
+            )
+        else:
+            reask = (
+                "कृपया 1, 2 किंवा 3 पाठवा.\n"
+                "Please reply with 1, 2 or 3."
+            )
         result = _send(mobile, reask)
         return {
             "sent": [result],
@@ -737,6 +900,7 @@ def _finalise_collection(
     )
 
     sent: list[dict] = []
+    language = _session_language(session_data, farmer_id)
     body = _format_confirmation(
         name=name,
         crop=crop,
@@ -745,6 +909,7 @@ def _finalise_collection(
         taluka=taluka,
         acres=acres if acres is not None else "—",
         phone=phone,
+        language=language,
     )
     sent.append(_send(mobile, body))
 

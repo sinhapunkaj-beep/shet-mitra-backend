@@ -10,6 +10,12 @@ class Agent {
   final String region;
   final bool isActive;
 
+  /// Top-level region code per SDD §2.1 / §6.1:
+  ///   * `MH` — Maharashtra (ShetMitra brand)
+  ///   * `JH` — Jharkhand (Bagaan Sathi brand)
+  /// Defaults to `MH` for legacy rows that pre-date the column.
+  final String regionCode;
+
   const Agent({
     required this.id,
     required this.name,
@@ -17,6 +23,7 @@ class Agent {
     required this.districts,
     required this.region,
     required this.isActive,
+    this.regionCode = 'MH',
   });
 
   factory Agent.fromJson(Map<String, dynamic> json) {
@@ -39,6 +46,7 @@ class Agent {
       districts: districts,
       region: (json['region'] ?? '').toString(),
       isActive: json['is_active'] == true || json['is_active'] == 'true',
+      regionCode: (json['region_code'] ?? 'MH').toString(),
     );
   }
 
@@ -49,6 +57,7 @@ class Agent {
         'districts': districts,
         'region': region,
         'is_active': isActive,
+        'region_code': regionCode,
       };
 
   Agent copyWith({
@@ -58,6 +67,7 @@ class Agent {
     List<String>? districts,
     String? region,
     bool? isActive,
+    String? regionCode,
   }) =>
       Agent(
         id: id ?? this.id,
@@ -66,5 +76,6 @@ class Agent {
         districts: districts ?? this.districts,
         region: region ?? this.region,
         isActive: isActive ?? this.isActive,
+        regionCode: regionCode ?? this.regionCode,
       );
 }

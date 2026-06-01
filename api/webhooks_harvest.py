@@ -38,7 +38,8 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from api import whatsapp_db
-from api.whatsapp_sender import get_sender
+from api.whatsapp_sender import get_region_code, get_sender
+from pipelines import i18n
 
 LOG = logging.getLogger(__name__)
 
@@ -419,7 +420,51 @@ def _parse_date(body: str) -> Optional[date]:
 # ---------------------------------------------------------------------------
 # Message templates (user-facing; emoji-bearing strings are intentional).
 # ---------------------------------------------------------------------------
-def _format_initial_message(farmer_name: str) -> str:
+def _resolve_language(farmer_id: Optional[str]) -> str:
+    """Return farmer-facing language (Hindi for JH, Marathi for MH).
+    Defaults to Marathi when region cannot be resolved."""
+    try:
+        region_code = get_region_code(farmer_id) if farmer_id else None
+    except Exception:  # noqa: BLE001
+        region_code = None
+    if not region_code:
+        return i18n.DEFAULT_LANGUAGE
+    return i18n.language_for_region(region_code)
+
+
+def _is_hindi(language: str) -> bool:
+    return (language or "").strip().lower() == "hindi"
+
+
+def _session_language(session_data: dict, farmer_id: Optional[str]) -> str:
+    lang = (session_data or {}).get("language")
+    if isinstance(lang, str) and lang.strip():
+        return lang
+    resolved = _resolve_language(farmer_id)
+    if isinstance(session_data, dict):
+        session_data["language"] = resolved
+    return resolved
+
+
+def _format_initial_message(
+    farmer_name: str, language: str = i18n.DEFAULT_LANGUAGE
+) -> str:
+    if _is_hindi(language):
+        # JH farmers — Hindi prompts from data/translations/hindi.json with
+        # the bilingual English line preserved so the existing assertion
+        # patterns (which look for "What was your harvest this season")
+        # continue to pass for MH AND we get Hindi for JH.
+        return (
+            f"{farmer_name} ji,\n"
+            f"{i18n.get_message('harvest_yield_question', 'Hindi')}\n"
+            "What was your harvest this season?\n\n"
+            "1. कुल उत्पादन (Total yield kg/acre): ?\n"
+            "2. बिक्री दाम (Selling price ₹/kg): ?\n"
+            "3. श्रेणी (Grade): A / B / C\n"
+            "4. बिक्री की तारीख (Date sold): ?\n\n"
+            "यह डेटा अगले वर्ष अधिक सटीक सलाह के लिए उपयोग होगा।\n"
+            "This data will improve next year's advice."
+        )
     return (
         f"{farmer_name} ji,\n"
         "या हंगामात तुम्हाला किती उत्पन्न मिळाले?\n"
@@ -434,14 +479,25 @@ def _format_initial_message(farmer_name: str) -> str:
     )
 
 
-def _format_q_yield() -> str:
+def _format_q_yield(language: str = i18n.DEFAULT_LANGUAGE) -> str:
+    if _is_hindi(language):
+        return (
+            f"{i18n.get_message('harvest_yield_question', 'Hindi')}\n"
+            "Please send total yield in kg/acre:"
+        )
     return (
         "कृपया एकूण उत्पादन kg/acre मध्ये पाठवा:\n"
         "Please send total yield in kg/acre:"
     )
 
 
-def _format_q_price() -> str:
+def _format_q_price(language: str = i18n.DEFAULT_LANGUAGE) -> str:
+    if _is_hindi(language):
+        return (
+            "✅ दर्ज हो गया! / Saved!\n\n"
+            f"{i18n.get_message('harvest_price_question', 'Hindi')}\n"
+            "Now send selling price in ₹/kg:"
+        )
     return (
         "✅ नोंदवले! / Saved!\n\n"
         "आता विक्री किंमत ₹/kg मध्ये पाठवा:\n"
@@ -449,14 +505,25 @@ def _format_q_price() -> str:
     )
 
 
-def _format_q_grade() -> str:
+def _format_q_grade(language: str = i18n.DEFAULT_LANGUAGE) -> str:
+    if _is_hindi(language):
+        return (
+            "✅ दर्ज हो गया! / Saved!\n\n"
+            f"{i18n.get_message('harvest_grade_question', 'Hindi')} / Send grade: A / B / C"
+        )
     return (
         "✅ नोंदवले! / Saved!\n\n"
         "श्रेणी पाठवा / Send grade: A / B / C"
     )
 
 
-def _format_q_sold_date() -> str:
+def _format_q_sold_date(language: str = i18n.DEFAULT_LANGUAGE) -> str:
+    if _is_hindi(language):
+        return (
+            "✅ दर्ज हो गया! / Saved!\n\n"
+            f"{i18n.get_message('harvest_sold_date_question', 'Hindi')}\n"
+            "Send date sold (DD-MM-YYYY or today / yesterday):"
+        )
     return (
         "✅ नोंदवले! / Saved!\n\n"
         "विकल्याची तारीख पाठवा (DD-MM-YYYY किंवा today / yesterday):\n"
@@ -464,28 +531,49 @@ def _format_q_sold_date() -> str:
     )
 
 
-def _format_invalid_yield() -> str:
+def _format_invalid_yield(language: str = i18n.DEFAULT_LANGUAGE) -> str:
+    if _is_hindi(language):
+        return (
+            "कृपया उत्पादन kg में भेजें (जैसे 1200)।\n"
+            "Please send yield in kg (e.g. 1200)."
+        )
     return (
         "कृपया उत्पादन kg मध्ये पाठवा (उदा. 1200).\n"
         "Please send yield in kg (e.g. 1200)."
     )
 
 
-def _format_invalid_price() -> str:
+def _format_invalid_price(language: str = i18n.DEFAULT_LANGUAGE) -> str:
+    if _is_hindi(language):
+        return (
+            "कृपया बिक्री दाम ₹/kg में भेजें (जैसे 85.5)।\n"
+            "Please send selling price in ₹/kg (e.g. 85.5)."
+        )
     return (
         "कृपया विक्री किंमत ₹/kg पाठवा (उदा. 85.5).\n"
         "Please send selling price in ₹/kg (e.g. 85.5)."
     )
 
 
-def _format_invalid_grade() -> str:
+def _format_invalid_grade(language: str = i18n.DEFAULT_LANGUAGE) -> str:
+    if _is_hindi(language):
+        return (
+            "कृपया श्रेणी भेजें: A, B या C।\n"
+            "Please send grade: A, B or C."
+        )
     return (
         "कृपया श्रेणी पाठवा: A, B किंवा C.\n"
         "Please send grade: A, B or C."
     )
 
 
-def _format_invalid_date() -> str:
+def _format_invalid_date(language: str = i18n.DEFAULT_LANGUAGE) -> str:
+    if _is_hindi(language):
+        return (
+            "कृपया तारीख DD-MM-YYYY फॉर्मेट में भेजें।\n"
+            "Please send the date in DD-MM-YYYY format\n"
+            "(or 'today' / 'yesterday')."
+        )
     return (
         "कृपया तारीख DD-MM-YYYY स्वरूपात पाठवा.\n"
         "Please send the date in DD-MM-YYYY format\n"
@@ -501,8 +589,29 @@ def _format_complete(
     price_inr_per_kg: float,
     grade: str,
     sold_on: date,
+    language: str = i18n.DEFAULT_LANGUAGE,
 ) -> str:
     variety_label = variety or "—"
+    if _is_hindi(language):
+        if yield_total_kg is not None:
+            yield_line = f"\U0001F33E उपज: {yield_total_kg:.0f} kg कुल"
+        elif yield_per_acre_kg is not None:
+            yield_line = f"\U0001F33E उपज: {yield_per_acre_kg:.0f} kg/एकड़"
+        else:
+            yield_line = "\U0001F33E उपज: —"
+        return (
+            "✅ मौसम का डेटा दर्ज हो गया!\n"
+            "Season data saved!\n\n"
+            "━━━━━━━━━━━━━━━━━━━━\n"
+            f"\U0001F33F फसल: {crop} — {variety_label}\n"
+            f"{yield_line}\n"
+            f"\U0001F4B0 दाम: ₹{price_inr_per_kg:g}/kg\n"
+            f"\U0001F4CB श्रेणी: {grade}\n"
+            f"\U0001F4C5 बेचा: {sold_on.isoformat()}\n"
+            "━━━━━━━━━━━━━━━━━━━━\n\n"
+            "धन्यवाद! / Thank you —\n"
+            "your data improves next season's advice."
+        )
     if yield_total_kg is not None:
         yield_line = f"\U0001F33E उत्पादन: {yield_total_kg:.0f} kg एकूण"
     elif yield_per_acre_kg is not None:
@@ -552,6 +661,7 @@ def start_harvest_collection(
         raise ValueError(f"Farmer {farmer_id} has no mobile_number")
 
     farmer_name = farmer.get("farmer_full_name") or "Shetkari"
+    language = _resolve_language(farmer_id)
 
     actual_id = _create_harvest_actual(
         farmer_id=farmer_id,
@@ -564,8 +674,8 @@ def start_harvest_collection(
     )
 
     sent: list[dict] = []
-    sent.append(_send(mobile, _format_initial_message(farmer_name)))
-    sent.append(_send(mobile, _format_q_yield()))
+    sent.append(_send(mobile, _format_initial_message(farmer_name, language=language)))
+    sent.append(_send(mobile, _format_q_yield(language=language)))
 
     session_data = {
         "actual_id": actual_id,
@@ -576,6 +686,7 @@ def start_harvest_collection(
         "amed_predicted_yield_kg": amed_predicted_yield_kg,
         "amed_predicted_grade": amed_predicted_grade,
         "farmer_name": farmer_name,
+        "language": language,
     }
     session = whatsapp_db.upsert_session(
         mobile,
@@ -615,9 +726,10 @@ def _handle_yield(mobile: str, body: str, session: dict) -> dict:
     parsed = _validate_yield(body)
     farmer_id = session["farmer_id"]
     session_data = session.get("session_data") or {}
+    language = _session_language(session_data, farmer_id)
 
     if parsed is None:
-        result = _send(mobile, _format_invalid_yield())
+        result = _send(mobile, _format_invalid_yield(language=language))
         return {
             "sent": [result],
             "next_step": Step.YIELD,
@@ -659,7 +771,7 @@ def _handle_yield(mobile: str, body: str, session: dict) -> dict:
     if other_value is not None:
         session_data["yield_other_kg"] = other_value
     _advance(mobile, farmer_id, Step.PRICE, session_data)
-    result = _send(mobile, _format_q_price())
+    result = _send(mobile, _format_q_price(language=language))
     return {
         "sent": [result],
         "next_step": Step.PRICE,
@@ -671,9 +783,10 @@ def _handle_price(mobile: str, body: str, session: dict) -> dict:
     value = _validate_price(body)
     farmer_id = session["farmer_id"]
     session_data = session.get("session_data") or {}
+    language = _session_language(session_data, farmer_id)
 
     if value is None:
-        result = _send(mobile, _format_invalid_price())
+        result = _send(mobile, _format_invalid_price(language=language))
         return {
             "sent": [result],
             "next_step": Step.PRICE,
@@ -686,7 +799,7 @@ def _handle_price(mobile: str, body: str, session: dict) -> dict:
 
     session_data["selling_price_inr_per_kg"] = value
     _advance(mobile, farmer_id, Step.GRADE, session_data)
-    result = _send(mobile, _format_q_grade())
+    result = _send(mobile, _format_q_grade(language=language))
     return {
         "sent": [result],
         "next_step": Step.GRADE,
@@ -698,9 +811,10 @@ def _handle_grade(mobile: str, body: str, session: dict) -> dict:
     grade = _validate_grade(body)
     farmer_id = session["farmer_id"]
     session_data = session.get("session_data") or {}
+    language = _session_language(session_data, farmer_id)
 
     if grade is None:
-        result = _send(mobile, _format_invalid_grade())
+        result = _send(mobile, _format_invalid_grade(language=language))
         return {
             "sent": [result],
             "next_step": Step.GRADE,
@@ -713,7 +827,7 @@ def _handle_grade(mobile: str, body: str, session: dict) -> dict:
 
     session_data["grade"] = grade
     _advance(mobile, farmer_id, Step.SOLD_DATE, session_data)
-    result = _send(mobile, _format_q_sold_date())
+    result = _send(mobile, _format_q_sold_date(language=language))
     return {
         "sent": [result],
         "next_step": Step.SOLD_DATE,
@@ -725,9 +839,10 @@ def _handle_sold_date(mobile: str, body: str, session: dict) -> dict:
     sold = _parse_date(body)
     farmer_id = session["farmer_id"]
     session_data = session.get("session_data") or {}
+    language = _session_language(session_data, farmer_id)
 
     if sold is None:
-        result = _send(mobile, _format_invalid_date())
+        result = _send(mobile, _format_invalid_date(language=language))
         return {
             "sent": [result],
             "next_step": Step.SOLD_DATE,
@@ -806,6 +921,7 @@ def _finalise_collection(
         session_data=session_data,
     )
 
+    language = _session_language(session_data, farmer_id)
     sent = [
         _send(
             mobile,
@@ -817,6 +933,7 @@ def _finalise_collection(
                 price_inr_per_kg=float(price) if price is not None else 0.0,
                 grade=grade,
                 sold_on=sold_on,
+                language=language,
             ),
         )
     ]

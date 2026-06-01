@@ -29,6 +29,7 @@ class _RegisterFarmerScreenState extends State<RegisterFarmerScreen> {
   final TextEditingController _areaCtrl = TextEditingController();
   final TextEditingController _treeCountCtrl = TextEditingController();
   final TextEditingController _treeAgeCtrl = TextEditingController();
+  final TextEditingController _lastYieldCtrl = TextEditingController();
   final TextEditingController _overrideReasonCtrl = TextEditingController();
 
   String? _selectedCrop;
@@ -60,6 +61,7 @@ class _RegisterFarmerScreenState extends State<RegisterFarmerScreen> {
     _areaCtrl.dispose();
     _treeCountCtrl.dispose();
     _treeAgeCtrl.dispose();
+    _lastYieldCtrl.dispose();
     _overrideReasonCtrl.dispose();
     super.dispose();
   }
@@ -108,6 +110,15 @@ class _RegisterFarmerScreenState extends State<RegisterFarmerScreen> {
     setState(() => _outsideTerritory = !inTerritory);
   }
 
+  bool get _isJardaluGiEligible {
+    if (_selectedVariety == null) return false;
+    return RegionHelper.isJardaluGiEligible(
+      variety: _selectedVariety!,
+      lat: _lat,
+      lng: _lng,
+    );
+  }
+
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     if (_outsideTerritory && !_overrideAccepted) {
@@ -138,6 +149,10 @@ class _RegisterFarmerScreenState extends State<RegisterFarmerScreen> {
           bearingYear: _selectedCrop == 'Mango' ? _bearing : null,
           irrigationType: _selectedCrop == 'Mango' ? _irrigation : null,
           cropRegion: agent.region,
+          regionCode: agent.regionCode,
+          lastYieldKgPerTree:
+              double.tryParse(_lastYieldCtrl.text.trim()),
+          giVerified: _isJardaluGiEligible,
           overrideTerritory: _outsideTerritory && _overrideAccepted,
           overrideReason: _overrideReasonCtrl.text.trim(),
         );
@@ -162,6 +177,7 @@ class _RegisterFarmerScreenState extends State<RegisterFarmerScreen> {
     _areaCtrl.clear();
     _treeCountCtrl.clear();
     _treeAgeCtrl.clear();
+    _lastYieldCtrl.clear();
     _overrideReasonCtrl.clear();
     setState(() {
       _selectedCrop = null;
@@ -178,7 +194,14 @@ class _RegisterFarmerScreenState extends State<RegisterFarmerScreen> {
     final Agent? agent = context.watch<AuthState>().currentAgent;
     if (agent == null) return const SizedBox.shrink();
 
-    final List<String> crops = RegionHelper.cropsForRegion(agent.region);
+    final bool isJharkhand = agent.regionCode == RegionHelper.regionJH;
+    // Variety dropdown uses the agent's regionCode for JH; otherwise it
+    // falls back to the legacy sub-region (Konkan / Nashik / etc).
+    final String varietyRegion =
+        isJharkhand ? RegionHelper.regionJH : agent.region;
+    final List<String> crops = RegionHelper.cropsForRegion(
+      isJharkhand ? RegionHelper.regionJH : agent.region,
+    );
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -323,12 +346,16 @@ class _RegisterFarmerScreenState extends State<RegisterFarmerScreen> {
             if (_selectedCrop != null) ...<Widget>[
               const SizedBox(height: 12),
               VarietyDropdown(
-                region: agent.region,
+                region: varietyRegion,
                 crop: _selectedCrop!,
                 value: _selectedVariety,
                 onChanged: (String? v) => setState(() => _selectedVariety = v),
                 label: I18n.t('variety', _locale),
               ),
+              if (_isJardaluGiEligible) ...<Widget>[
+                const SizedBox(height: 8),
+                _GiZoneBadge(label: I18n.t('gi_zone_badge', _locale)),
+              ],
             ],
             if (_selectedCrop == 'Mango') ...<Widget>[
               const SizedBox(height: 12),
@@ -367,10 +394,26 @@ class _RegisterFarmerScreenState extends State<RegisterFarmerScreen> {
                   DropdownMenuItem<String>(value: 'Flood', child: Text('Flood')),
                   DropdownMenuItem<String>(
                       value: 'Rain-fed', child: Text('Rain-fed')),
+                  DropdownMenuItem<String>(value: 'None', child: Text('None')),
                 ],
                 onChanged: (String? v) =>
                     setState(() => _irrigation = v ?? 'Drip'),
               ),
+              // Jharkhand-specific optional input — last season yield
+              // per tree. Surfaces a baseline volume estimate for the
+              // matching engine.
+              if (isJharkhand) ...<Widget>[
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _lastYieldCtrl,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  decoration: InputDecoration(
+                    labelText: I18n.t('last_yield_kg_per_tree', _locale),
+                    border: const OutlineInputBorder(),
+                  ),
+                ),
+              ],
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 value: _bearing,
@@ -405,6 +448,40 @@ class _RegisterFarmerScreenState extends State<RegisterFarmerScreen> {
             ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Small green badge surfaced under the variety dropdown when the
+/// Jardalu GI bbox check passes.
+class _GiZoneBadge extends StatelessWidget {
+  const _GiZoneBadge({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFF2E7D32).withOpacity(0.12),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFF2E7D32), width: 1.4),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          const Icon(Icons.verified, color: Color(0xFF2E7D32), size: 18),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Color(0xFF2E7D32),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
       ),
     );
   }

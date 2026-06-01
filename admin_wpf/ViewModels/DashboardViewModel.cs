@@ -1,6 +1,7 @@
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using ShetMitraAdmin.Models.Marketplace;
 using ShetMitraAdmin.Services;
 
 namespace ShetMitraAdmin.ViewModels;
@@ -32,6 +33,9 @@ public partial class DashboardViewModel : ObservableObject
     [ObservableProperty] private int mangoTotalFarms;
     [ObservableProperty] private string mangoBearingYear = "ON";
     [ObservableProperty] private double mangoThisWeekVolumeMt;
+
+    // Marketplace stat cards (June 2026 — Bagaan Sathi SDD §7)
+    [ObservableProperty] private MarketplaceAnalytics marketplaceStats = new();
 
     public double VarietyProgressPct => VarietyTotal == 0
         ? 0.0
@@ -76,6 +80,17 @@ public partial class DashboardViewModel : ObservableObject
         MangoTotalFarms = 312;
         MangoBearingYear = "ON";
         MangoThisWeekVolumeMt = 412;
+
+        MarketplaceStats = new MarketplaceAnalytics
+        {
+            ActiveLotsCount = 47,
+            ActiveLotsTotalKg = 86200,
+            ActiveRequirementsCount = 18,
+            MatchesThisWeek = 22,
+            TradesCompleted = 64,
+            AvgPremiumPct = 7.4,
+            PlatformFeesThisMonthInr = 38450
+        };
     }
 
     [RelayCommand]
@@ -109,6 +124,18 @@ public partial class DashboardViewModel : ObservableObject
                 MangoBearingYear = konkan[0].BearingYear ?? "UNKNOWN";
                 MangoThisWeekVolumeMt = konkan[0].EstimatedVolumeMt;
             }
+        }
+        catch
+        {
+            // keep design-time placeholders
+        }
+
+        // Marketplace KPIs (Bagaan Sathi SDD §7). Best-effort; on failure
+        // the service returns deterministic placeholders so the cards
+        // remain populated.
+        try
+        {
+            MarketplaceStats = await _supabase.GetMarketplaceAnalytics();
         }
         catch
         {

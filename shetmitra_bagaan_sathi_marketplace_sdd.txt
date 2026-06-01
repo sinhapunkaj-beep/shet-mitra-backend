@@ -1,0 +1,1775 @@
+═══════════════════════════════════════════════════════════════
+SHETMITRA — SYSTEM DESIGN DOCUMENT
+Bagaan Sathi (Jharkhand) + Trader-Farmer Connect
+Both Regions — Maharashtra + Jharkhand
+Multi-Agent Swarm Build
+Version: 1.0 — June 2026
+Owner: Pankaj Sinha — Sahyadri Krushi Intelligence
+═══════════════════════════════════════════════════════════════
+
+PROJECT FOLDER: C:\Users\Pankaj Sinha\Desktop\Projects\Project Shet Mitra\shet-mitra
+SUPABASE:       https://euydubpywdsettjywkms.supabase.co
+GITHUB:         sinhapunkaj-beep/shetmitra (private)
+
+═══════════════════════════════════════════════════════════════
+SECTION 1 — SCOPE
+═══════════════════════════════════════════════════════════════
+
+TWO MAJOR ADDITIONS:
+
+ADDITION 1 — BAGAAN SATHI (Jharkhand Region)
+  New region: Jharkhand + Bihar border + Bengal border
+  Brand name: "Bagaan Sathi" on WhatsApp
+  Primary crop: Mango (Mallika, Amrapali, Jardalu,
+                Himsagar, Langra)
+  Key districts: Godda, Pakur, Sahebganj, Dumka,
+                 Deoghar, Ranchi, Khunti
+  Mandis tracked: Jharkhand + Bihar + Bengal + Delhi
+  Language: Hindi primary
+  Anchor: Deepika Pandey Singh MLA
+           Mahagama AC-18, Godda district
+  GI special: Jardalu mango — Bhagalpur/Godda belt
+
+ADDITION 2 — TRADER-FARMER CONNECT MARKETPLACE
+  Both regions: Maharashtra AND Jharkhand
+  Model A: Direct connect (Phase 1)
+  Model B: Lot aggregation (Phase 1)
+  Model C: Tasgaon plant priority queue (Phase 1)
+  Model D: Reverse auction (Phase 2)
+  Revenue: Subscription + connection fees + commission
+
+NAMING:
+  Maharashtra farmers see: "ShetMitra"
+  Jharkhand farmers see:   "Bagaan Sathi"
+  Both powered by: Sahyadri Krushi Intelligence
+  Config-driven — one code change per region
+
+═══════════════════════════════════════════════════════════════
+SECTION 2 — MULTI-REGION ARCHITECTURE
+═══════════════════════════════════════════════════════════════
+
+────────────────────────────────────────────────────────────────
+2.1 REGIONS TABLE
+────────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS regions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  region_code text UNIQUE NOT NULL,
+  region_name text NOT NULL,
+  whatsapp_sender_name text NOT NULL,
+  default_language text DEFAULT 'Marathi',
+  amed_bbox_north numeric,
+  amed_bbox_south numeric,
+  amed_bbox_east numeric,
+  amed_bbox_west numeric,
+  primary_crops text[],
+  primary_mandis text[],
+  is_active boolean DEFAULT true,
+  launched_at date,
+  created_at timestamptz DEFAULT now()
+);
+
+INSERT INTO regions VALUES
+(gen_random_uuid(), 'MH', 'Maharashtra',
+ 'ShetMitra', 'Marathi',
+ 22.0, 15.5, 80.5, 72.5,
+ ARRAY['Grapes','Pomegranate','Mango'],
+ ARRAY['Tasgaon APMC','Sangli APMC',
+       'Solapur APMC','Nashik APMC',
+       'Ratnagiri APMC'],
+ true, '2026-07-01', now()),
+
+(gen_random_uuid(), 'JH', 'Jharkhand',
+ 'Bagaan Sathi', 'Hindi',
+ 25.0, 21.5, 87.5, 83.5,
+ ARRAY['Mango'],
+ ARRAY['Bhagalpur APMC','Ranchi APMC',
+       'Malda APMC','Patna APMC',
+       'Delhi Azadpur APMC'],
+ true, '2027-03-01', now())
+ON CONFLICT (region_code) DO NOTHING;
+
+────────────────────────────────────────────────────────────────
+2.2 FARMERS TABLE UPDATE
+────────────────────────────────────────────────────────────────
+
+ALTER TABLE farmers
+  ADD COLUMN IF NOT EXISTS region_code text
+    DEFAULT 'MH'
+    REFERENCES regions(region_code);
+
+Update existing farmers:
+UPDATE farmers SET region_code = 'MH'
+WHERE region_code IS NULL;
+
+────────────────────────────────────────────────────────────────
+2.3 WHATSAPP SENDER NAME ROUTING
+────────────────────────────────────────────────────────────────
+
+In api/whatsapp_sender.py:
+
+def get_sender_name(farmer_id: str) -> str:
+  farmer = get_farmer(farmer_id)
+  region = get_region(farmer.region_code)
+  return region.whatsapp_sender_name
+
+def get_report_footer(farmer_id: str) -> str:
+  sender = get_sender_name(farmer_id)
+  return f"— {sender}\n   Sahyadri Krushi Intelligence"
+
+Apply to ALL WhatsApp messages:
+  Daily reports
+  Advisory messages
+  Booking confirmations
+  Market alerts
+  Trader-farmer connections
+
+═══════════════════════════════════════════════════════════════
+SECTION 3 — JHARKHAND MANGO DATA
+═══════════════════════════════════════════════════════════════
+
+────────────────────────────────────────────────────────────────
+3.1 NEW MANDIS TO ADD TO mandi_config
+────────────────────────────────────────────────────────────────
+
+INSERT INTO mandi_config:
+
+JHARKHAND:
+  Ranchi APMC — state capital — mixed varieties
+  Deoghar APMC — Mallika + Amrapali
+  Dumka APMC — Mallika + Amrapali
+  Godda Mandi — Jardalu specialist
+  Sahebganj Mandi — Jardalu + Himsagar
+  Pakur Mandi — border trade
+  Hazaribagh Mandi — plateau belt
+
+BIHAR (critical buying mandis):
+  Bhagalpur APMC — MOST IMPORTANT
+    Primary buyer for Jardalu GI mangoes
+    Also buys Mallika and Amrapali
+  Munger APMC — volume buyer
+  Patna APMC — state capital — premium buyer
+  Saharsa APMC — border with Jharkhand
+  Banka APMC — Jardalu belt
+  Purnea APMC — north Bihar aggregator
+
+WEST BENGAL:
+  Malda APMC — major mango trading hub
+  Murshidabad Mandi — volume market
+  Kolkata Koley Market — price setter
+    (sets reference price for all Bengal mandis)
+  Siliguri Mandi — north Bengal distributor
+
+NATIONAL:
+  Delhi Azadpur APMC — national price signal
+  Mumbai Vashi APMC — export hub
+  Hyderabad Gaddiannaram — south India signal
+
+────────────────────────────────────────────────────────────────
+3.2 JHARKHAND MANGO VARIETIES
+────────────────────────────────────────────────────────────────
+
+Add to data/variety_config.json under "Mango":
+
+"Mallika": {
+  "regions": ["Jharkhand","Bihar"],
+  "districts": ["Godda","Deoghar","Dumka",
+                "Ranchi","Khunti","Pakur"],
+  "harvest_months": [5, 6],
+  "maturity_days_from_fruit_set": 85,
+  "brix_target_min": 16,
+  "brix_target_max": 21,
+  "weight_target_grams": 250,
+  "export_quality": false,
+  "gi_tagged": false,
+  "mandi_primary": "Bhagalpur APMC",
+  "mandi_secondary": ["Ranchi APMC",
+                       "Deoghar APMC",
+                       "Delhi Azadpur APMC"],
+  "price_premium_pct": 15,
+  "spray_schedule": "mango_mallika_jharkhand",
+  "alternate_bearing": false,
+  "language_hint": "Hindi",
+  "region_code": "JH"
+},
+
+"Amrapali": {
+  "regions": ["Jharkhand","Bihar"],
+  "districts": ["Ranchi","Khunti","Hazaribagh",
+                "Ramgarh","Bokaro"],
+  "harvest_months": [6, 7],
+  "maturity_days_from_fruit_set": 90,
+  "brix_target_min": 18,
+  "brix_target_max": 24,
+  "weight_target_grams": 200,
+  "export_quality": false,
+  "gi_tagged": false,
+  "mandi_primary": "Ranchi APMC",
+  "mandi_secondary": ["Patna APMC",
+                       "Kolkata Koley Market"],
+  "price_premium_pct": 10,
+  "spray_schedule": "mango_amrapali_jharkhand",
+  "alternate_bearing": false,
+  "language_hint": "Hindi",
+  "region_code": "JH"
+},
+
+"Jardalu": {
+  "regions": ["Jharkhand","Bihar"],
+  "districts": ["Godda","Sahebganj","Pakur",
+                "Banka (Bihar)","Bhagalpur (Bihar)"],
+  "harvest_months": [5, 6],
+  "maturity_days_from_fruit_set": 80,
+  "brix_target_min": 19,
+  "brix_target_max": 26,
+  "weight_target_grams": 150,
+  "export_quality": true,
+  "gi_tagged": true,
+  "gi_zone_bbox": {
+    "north": 25.0, "south": 24.0,
+    "east": 87.5, "west": 86.5
+  },
+  "mandi_primary": "Bhagalpur APMC",
+  "mandi_secondary": ["Godda Mandi",
+                       "Delhi Azadpur APMC",
+                       "Mumbai Vashi APMC"],
+  "price_premium_pct": 60,
+  "spray_schedule": "mango_jardalu_gi",
+  "alternate_bearing": false,
+  "language_hint": "Hindi",
+  "region_code": "JH",
+  "gi_certification_eligible": true,
+  "export_markets": ["UAE","Saudi Arabia",
+                      "UK","USA"]
+},
+
+"Himsagar": {
+  "regions": ["Jharkhand","West Bengal"],
+  "districts": ["Sahebganj","Pakur",
+                "Murshidabad (WB)"],
+  "harvest_months": [5, 6],
+  "maturity_days_from_fruit_set": 80,
+  "brix_target_min": 18,
+  "brix_target_max": 23,
+  "weight_target_grams": 200,
+  "export_quality": true,
+  "gi_tagged": false,
+  "mandi_primary": "Malda APMC",
+  "mandi_secondary": ["Kolkata Koley Market",
+                       "Murshidabad Mandi"],
+  "price_premium_pct": 25,
+  "spray_schedule": "mango_himsagar_bengal",
+  "alternate_bearing": false,
+  "language_hint": "Hindi",
+  "region_code": "JH"
+},
+
+"Langra_JH": {
+  "regions": ["Jharkhand"],
+  "districts": ["Godda","Dumka","Deoghar"],
+  "harvest_months": [6, 7],
+  "maturity_days_from_fruit_set": 95,
+  "brix_target_min": 15,
+  "brix_target_max": 20,
+  "weight_target_grams": 250,
+  "export_quality": false,
+  "gi_tagged": false,
+  "mandi_primary": "Bhagalpur APMC",
+  "mandi_secondary": ["Patna APMC",
+                       "Delhi Azadpur APMC"],
+  "price_premium_pct": 5,
+  "spray_schedule": "mango_langra_jharkhand",
+  "alternate_bearing": true,
+  "language_hint": "Hindi",
+  "region_code": "JH"
+}
+
+────────────────────────────────────────────────────────────────
+3.3 JARDALU GI VERIFICATION MODULE
+────────────────────────────────────────────────────────────────
+
+File: geo/gi_verifier.py
+
+class GIVerifier:
+  def verify_jardalu(self, plot_id: str) -> dict:
+    plot = get_plot(plot_id)
+    
+    # Check 1: Is farm within GI zone?
+    gi_bbox = variety_config['Jardalu']['gi_zone_bbox']
+    in_zone = (
+      gi_bbox['south'] <= plot.centroid_lat <=
+        gi_bbox['north'] and
+      gi_bbox['west'] <= plot.centroid_lng <=
+        gi_bbox['east']
+    )
+    
+    # Check 2: AMED confirms Mango crop
+    amed = get_latest_amed_reading(plot_id)
+    is_mango = (
+      amed.crop_type_detected == 'Mango' and
+      amed.crop_type_confidence >= 0.80
+    )
+    
+    # Check 3: Farmer registered as Jardalu
+    farmer = get_farmer(plot.farmer_id)
+    is_jardalu = (
+      farmer.current_crop_variety == 'Jardalu'
+    )
+    
+    gi_eligible = in_zone and is_mango and is_jardalu
+    
+    return {
+      'gi_eligible': gi_eligible,
+      'in_gi_zone': in_zone,
+      'amed_confirmed': is_mango,
+      'variety_registered': is_jardalu,
+      'certificate_ref': f"SKI-GI-{plot_id[:8]}"
+        if gi_eligible else None,
+      'premium_multiplier': 1.60
+        if gi_eligible else 1.0
+    }
+
+  def get_gi_certificate_text(self,
+      farmer_id: str, plot_id: str) -> str:
+    result = self.verify_jardalu(plot_id)
+    farmer = get_farmer(farmer_id)
+    if result['gi_eligible']:
+      return f"""
+      JARDALU GI VERIFICATION CERTIFICATE
+      Bagaan Sathi | Sahyadri Krushi Intelligence
+      
+      Farmer: {farmer.farmer_full_name}
+      Village: {farmer.village}, {farmer.district}
+      Certificate: {result['certificate_ref']}
+      
+      ✅ GI Zone: Confirmed (Godda/Bhagalpur belt)
+      ✅ Crop: AMED satellite verified Mango
+      ✅ Variety: Jardalu (farmer registered)
+      
+      This lot is eligible for Jardalu GI
+      premium pricing.
+      """
+    return None
+
+────────────────────────────────────────────────────────────────
+3.4 CEDA DATA IMPORT FOR JHARKHAND MANDIS
+────────────────────────────────────────────────────────────────
+
+Update scripts/import_mango_market_data.py:
+
+Add new mandi list for Jharkhand belt:
+  State: Jharkhand → Ranchi, Deoghar, Dumka,
+                      Godda, Sahebganj
+  State: Bihar → Bhagalpur, Munger, Patna,
+                  Saharsa, Banka, Purnea
+  State: West Bengal → Malda, Murshidabad
+  State: Delhi → Azadpur
+  State: Maharashtra → Vashi (already exists)
+
+Commodity: Mango
+All varieties available
+Years: 2015-2026
+
+Train separate ML models for Jharkhand belt:
+  arima_mango_mallika_jharkhand.pkl
+  arima_mango_jardalu_jharkhand.pkl
+  arima_mango_amrapali_jharkhand.pkl
+
+Target MAPE:
+  Mallika:   < 18%
+  Jardalu:   < 20% (lumpy GI premium)
+  Amrapali:  < 16%
+
+────────────────────────────────────────────────────────────────
+3.5 AMED BBOX FOR JHARKHAND
+────────────────────────────────────────────────────────────────
+
+Add to .env:
+  AMED_BBOX_JHARKHAND_NORTH=25.0
+  AMED_BBOX_JHARKHAND_SOUTH=21.5
+  AMED_BBOX_JHARKHAND_EAST=87.5
+  AMED_BBOX_JHARKHAND_WEST=83.5
+  AMED_BBOX_BIHAR_NORTH=27.5
+  AMED_BBOX_BIHAR_SOUTH=24.0
+  AMED_BBOX_BIHAR_EAST=88.0
+  AMED_BBOX_BIHAR_WEST=83.5
+
+Add Jharkhand to belt fetch schedule:
+  Every 14 days fetch AMED belt data
+  for Jharkhand + Bihar + Bengal bboxes
+  Store in amed_belt_data with region=JH
+
+═══════════════════════════════════════════════════════════════
+SECTION 4 — TRADER-FARMER CONNECT MARKETPLACE
+═══════════════════════════════════════════════════════════════
+
+────────────────────────────────────────────────────────────────
+4.1 DATABASE TABLES
+────────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS trader_requirements (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  trader_id uuid REFERENCES traders(id),
+  region_code text REFERENCES regions(region_code),
+  commodity text NOT NULL,
+  variety text,
+  quantity_kg_min numeric NOT NULL,
+  quantity_kg_max numeric,
+  grade text[] DEFAULT ARRAY['A','B'],
+  price_per_kg_offered numeric,
+  collection_from date NOT NULL,
+  collection_to date NOT NULL,
+  location_district text,
+  location_state text,
+  farm_pickup boolean DEFAULT true,
+  gi_required boolean DEFAULT false,
+  status text DEFAULT 'ACTIVE'
+    CHECK (status IN
+      ('ACTIVE','FULFILLED','EXPIRED',
+       'CANCELLED','PAUSED')),
+  matched_count integer DEFAULT 0,
+  created_at timestamptz DEFAULT now(),
+  expires_at timestamptz
+    DEFAULT now() + INTERVAL '7 days'
+);
+
+CREATE INDEX IF NOT EXISTS idx_req_commodity_date
+  ON trader_requirements(commodity,
+    collection_from, collection_to);
+CREATE INDEX IF NOT EXISTS idx_req_status
+  ON trader_requirements(status);
+
+CREATE TABLE IF NOT EXISTS farmer_lots (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  lot_ref text UNIQUE NOT NULL,
+  farmer_id uuid REFERENCES farmers(id),
+  plot_id uuid REFERENCES farm_plots(id),
+  region_code text REFERENCES regions(region_code),
+  commodity text NOT NULL,
+  variety text,
+  quantity_kg_estimated numeric NOT NULL,
+  quantity_kg_min_acceptable numeric,
+  grade_predicted text,
+  brix_estimated_min numeric,
+  brix_estimated_max numeric,
+  harvest_date_from date NOT NULL,
+  harvest_date_to date NOT NULL,
+  farm_district text,
+  farm_state text,
+  centroid_lat numeric,
+  centroid_lng numeric,
+  satellite_verified boolean DEFAULT true,
+  amed_verified boolean DEFAULT false,
+  gi_verified boolean DEFAULT false,
+  gi_certificate_ref text,
+  min_price_per_kg numeric,
+  auto_created boolean DEFAULT true,
+  status text DEFAULT 'AVAILABLE'
+    CHECK (status IN
+      ('AVAILABLE','MATCHED','PARTIALLY_MATCHED',
+       'SOLD','EXPIRED','WITHDRAWN')),
+  created_at timestamptz DEFAULT now(),
+  expires_at timestamptz
+    DEFAULT now() + INTERVAL '14 days'
+);
+
+CREATE INDEX IF NOT EXISTS idx_lots_commodity_date
+  ON farmer_lots(commodity,
+    harvest_date_from, harvest_date_to);
+CREATE INDEX IF NOT EXISTS idx_lots_region_status
+  ON farmer_lots(region_code, status);
+
+CREATE TABLE IF NOT EXISTS lot_matches (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  lot_id uuid REFERENCES farmer_lots(id),
+  requirement_id uuid
+    REFERENCES trader_requirements(id),
+  farmer_id uuid REFERENCES farmers(id),
+  trader_id uuid REFERENCES traders(id),
+  match_score numeric,
+  match_reasons text[],
+  farmer_notified_at timestamptz,
+  farmer_response text
+    CHECK (farmer_response IN
+      ('ACCEPTED','REJECTED',
+       'NO_RESPONSE','NEGOTIATING')),
+  farmer_counter_price numeric,
+  farmer_responded_at timestamptz,
+  trader_notified_at timestamptz,
+  trader_response text
+    CHECK (trader_response IN
+      ('ACCEPTED','REJECTED','COUNTER')),
+  trader_counter_price numeric,
+  connection_made boolean DEFAULT false,
+  connection_made_at timestamptz,
+  created_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS lot_aggregations (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  aggregation_ref text UNIQUE NOT NULL,
+  region_code text REFERENCES regions(region_code),
+  commodity text NOT NULL,
+  variety text,
+  grade_predicted text,
+  harvest_week_start date NOT NULL,
+  harvest_week_end date NOT NULL,
+  total_quantity_kg numeric,
+  farm_count integer,
+  lot_ids uuid[],
+  farmer_ids uuid[],
+  min_price_per_kg numeric,
+  status text DEFAULT 'OPEN'
+    CHECK (status IN
+      ('OPEN','OFFERED','SOLD','EXPIRED')),
+  created_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS farmer_trades (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  lot_id uuid REFERENCES farmer_lots(id),
+  farmer_id uuid REFERENCES farmers(id),
+  trader_id uuid REFERENCES traders(id),
+  match_id uuid REFERENCES lot_matches(id),
+  region_code text REFERENCES regions(region_code),
+  commodity text NOT NULL,
+  variety text,
+  quantity_kg_actual numeric,
+  price_per_kg_actual numeric,
+  total_value numeric,
+  mandi_price_same_day numeric,
+  premium_achieved_pct numeric,
+  trade_date date,
+  payment_mode text,
+  razorpay_payment_id text,
+  platform_fee_pct numeric DEFAULT 2.0,
+  platform_fee_amount numeric,
+  confirmed_by_farmer boolean DEFAULT false,
+  confirmed_by_trader boolean DEFAULT false,
+  gi_premium_applied boolean DEFAULT false,
+  created_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS lot_bids (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  lot_id uuid REFERENCES farmer_lots(id),
+  trader_id uuid REFERENCES traders(id),
+  bid_price_per_kg numeric NOT NULL,
+  bid_quantity_kg numeric,
+  bid_notes text,
+  bid_valid_until timestamptz,
+  status text DEFAULT 'ACTIVE'
+    CHECK (status IN
+      ('ACTIVE','WINNING','OUTBID',
+       'ACCEPTED','REJECTED','EXPIRED',
+       'WITHDRAWN')),
+  created_at timestamptz DEFAULT now()
+);
+
+────────────────────────────────────────────────────────────────
+4.2 MATCHING ENGINE
+────────────────────────────────────────────────────────────────
+
+File: pipelines/matching_engine.py
+
+Runs daily at 4:00 PM IST via APScheduler.
+
+def run_daily_matching():
+  """Match active trader requirements
+     with available farmer lots."""
+
+  requirements = get_active_requirements()
+  
+  for req in requirements:
+    # Find matching lots
+    candidate_lots = get_lots_matching(
+      commodity=req.commodity,
+      variety=req.variety,
+      grade=req.grade,
+      harvest_from=req.collection_from,
+      harvest_to=req.collection_to,
+      region_code=req.region_code
+    )
+    
+    for lot in candidate_lots:
+      # Calculate match score
+      score = calculate_match_score(lot, req)
+      
+      if score >= 0.70:
+        # Create match record
+        match = create_match(lot, req, score)
+        
+        # Notify farmer
+        notify_farmer_of_offer(
+          farmer_id=lot.farmer_id,
+          lot=lot,
+          requirement=req,
+          match_id=match.id
+        )
+        
+        # Log match
+        log_match_created(match)
+
+def calculate_match_score(lot, req) -> float:
+  score = 0.0
+  weights = {
+    'commodity': 0.30,
+    'variety': 0.20,
+    'grade': 0.15,
+    'quantity': 0.15,
+    'timing': 0.10,
+    'location': 0.10
+  }
+  
+  # Commodity match (mandatory)
+  if lot.commodity != req.commodity:
+    return 0.0
+  score += weights['commodity']
+  
+  # Variety match
+  if req.variety is None or \
+     lot.variety == req.variety:
+    score += weights['variety']
+  elif lot.variety and req.variety and \
+       lot.variety.lower() in \
+       req.variety.lower():
+    score += weights['variety'] * 0.5
+  
+  # Grade match
+  if lot.grade_predicted in req.grade:
+    score += weights['grade']
+  
+  # Quantity overlap
+  if lot.quantity_kg_estimated >= \
+     req.quantity_kg_min:
+    score += weights['quantity']
+  elif lot.quantity_kg_estimated >= \
+       req.quantity_kg_min * 0.7:
+    score += weights['quantity'] * 0.6
+  
+  # Timing overlap
+  overlap = date_range_overlap(
+    lot.harvest_date_from,
+    lot.harvest_date_to,
+    req.collection_from,
+    req.collection_to
+  )
+  score += weights['timing'] * overlap
+  
+  # Location proximity
+  if lot.farm_district == req.location_district:
+    score += weights['location']
+  elif lot.farm_state == req.location_state:
+    score += weights['location'] * 0.5
+  
+  return round(score, 3)
+
+────────────────────────────────────────────────────────────────
+4.3 LOT AGGREGATION ENGINE
+────────────────────────────────────────────────────────────────
+
+File: pipelines/lot_aggregator.py
+
+Runs weekly on Sunday at 11:00 PM IST.
+Groups small farms into tradeable lots.
+
+def run_weekly_aggregation():
+  """Group small farmer lots into
+     tradeable aggregated lots."""
+  
+  for region in get_active_regions():
+    for commodity in region.primary_crops:
+      # Get next 3 weeks of harvest windows
+      for week_start in get_next_3_weeks():
+        week_end = week_start + 7 days
+        
+        # Find all lots in this harvest window
+        lots = get_lots_in_window(
+          region_code=region.region_code,
+          commodity=commodity,
+          harvest_from=week_start,
+          harvest_to=week_end,
+          status='AVAILABLE'
+        )
+        
+        # Group by grade
+        for grade in ['A', 'B']:
+          grade_lots = [l for l in lots
+                        if l.grade_predicted == grade]
+          
+          total_kg = sum(l.quantity_kg_estimated
+                         for l in grade_lots)
+          
+          # Only aggregate if > 2 farms
+          # and > 1000 kg total
+          if len(grade_lots) >= 2 and \
+             total_kg >= 1000:
+            create_aggregated_lot(
+              region_code=region.region_code,
+              commodity=commodity,
+              grade=grade,
+              harvest_week_start=week_start,
+              lots=grade_lots,
+              total_kg=total_kg
+            )
+            
+            # Notify traders about
+            # aggregated lot
+            broadcast_aggregated_lot_to_traders(
+              region_code=region.region_code,
+              commodity=commodity,
+              grade=grade,
+              total_kg=total_kg,
+              harvest_week=week_start
+            )
+
+────────────────────────────────────────────────────────────────
+4.4 TASGAON PLANT PRIORITY QUEUE
+────────────────────────────────────────────────────────────────
+
+File: pipelines/plant_supply_queue.py
+
+Special model for Tasgaon plant (Maharashtra only).
+Runs daily at 5:00 PM IST after matching engine.
+
+def run_plant_priority_queue():
+  """Fill Tasgaon plant with farm supply
+     before external traders get access."""
+  
+  # Check plant capacity this week
+  plant_capacity = get_plant_weekly_capacity()
+  already_booked = get_plant_bookings_this_week()
+  remaining_capacity_kg = (
+    plant_capacity - already_booked
+  )
+  
+  if remaining_capacity_kg < 500:
+    return  # Plant full this week
+  
+  # Find Grade A Maharashtra farms
+  # harvesting this week
+  farms = get_available_farms(
+    region_code='MH',
+    commodity='Grapes',
+    harvest_this_week=True,
+    grade_predicted='A',
+    not_yet_matched=True
+  )
+  
+  for farm in farms:
+    if remaining_capacity_kg <= 0:
+      break
+    
+    # Calculate economics
+    processing_fee = get_rate(
+      'Washing, Sorting & Cleaning')
+    # e.g. ₹3/kg processing fee
+    
+    mandi_price = get_current_mandi_price(
+      'Dry Grapes', 'Tasgaon APMC')
+    plant_price = mandi_price * 1.12
+    # Plant pays 12% above mandi for Grade A
+    
+    net_to_farmer = plant_price - processing_fee
+    premium_vs_mandi = net_to_farmer - mandi_price
+    
+    if premium_vs_mandi > 0:
+      # Send priority offer to farmer
+      send_plant_priority_offer(
+        farmer_id=farm.farmer_id,
+        estimated_kg=farm.quantity_kg_estimated,
+        plant_price=plant_price,
+        processing_fee=processing_fee,
+        net_price=net_to_farmer,
+        premium=premium_vs_mandi
+      )
+      
+      remaining_capacity_kg -= \
+        farm.quantity_kg_estimated
+
+────────────────────────────────────────────────────────────────
+4.5 WHATSAPP FLOWS — TRADER SIDE
+────────────────────────────────────────────────────────────────
+
+FLOW 1 — Trader announces requirement:
+
+Trader replies "I NEED" to weekly report
+OR types "I NEED" at any time:
+
+Bot sends menu:
+  "What do you need?
+   
+   1. Commodity: Reply Dry Grapes/Pomegranate/
+                 Mango/Alphonso/Kesar/Jardalu
+   2. Quantity (kg minimum needed): Reply number
+   3. Grade: Reply A / B / Both
+   4. Price you are offering (Rs/kg): Reply number
+   5. Collection dates (from-to): Reply DD/MM-DD/MM
+   6. Location: Reply district name
+   7. Farm pickup? Reply YES/NO"
+
+Collect each answer in sequence.
+Save to trader_requirements table.
+Confirm: "Requirement saved. We will match
+         farms and notify you."
+
+FLOW 2 — Trader receives aggregated lot alert:
+
+  "🟡 LOT AVAILABLE — {region} {commodity}
+   
+   Grade {grade} — {variety}
+   Quantity: {total_kg} kg
+   {farm_count} farms — satellite verified
+   Harvest: {week_start} to {week_end}
+   Location: {district}, {state}
+   
+   Min price: ₹{min_price}/kg
+   
+   Reply BID ₹{price} to offer
+   Reply INFO for farm details
+   Reply SKIP to ignore"
+
+FLOW 3 — Trader receives direct match:
+
+  "✅ FARM MATCH FOUND
+   
+   {commodity} — Grade {grade}
+   Farmer: {first_name}, {village}
+   Quantity: {qty} kg
+   Harvest: {harvest_date}
+   Distance from you: ~{km} km
+   
+   Satellite grade: {grade}
+   Brix estimate: {brix_min}-{brix_max}
+   {gi_badge if jardalu}
+   
+   Offering: ₹{your_price}/kg
+   Farmer minimum: ₹{farmer_min}/kg
+   
+   Reply ACCEPT to connect with farmer
+   Reply COUNTER ₹{price} to negotiate
+   Reply SKIP to pass"
+
+────────────────────────────────────────────────────────────────
+4.6 WHATSAPP FLOWS — FARMER SIDE
+────────────────────────────────────────────────────────────────
+
+FLOW 1 — Auto-generated offer (most common):
+
+System detects harvest window approaching.
+Automatically creates farmer_lots record.
+Sends offer when match found:
+
+Maharashtra (Marathi + English):
+  "नमस्ते {name} ji! 🌿
+   
+   एक व्यापारी तुमचे {commodity} विकत घेऊ इच्छितो.
+   A trader wants to buy your {commodity}:
+   
+   🏢 {trader_business_name}
+   📦 {commodity} Grade {grade} — {qty} kg needed
+   💰 Offering: ₹{price}/kg
+      (vs mandi today: ₹{mandi_price}/kg)
+   📅 Collection: {date_from} to {date_to}
+   🚛 Farm pickup: {YES/NO}
+   
+   {gi_badge if applicable}
+   
+   तुमची शेती: {acres} acres = ~{est_kg} kg
+   अंदाजे कमाई: ₹{estimated_earning}
+   vs मंडी: ₹{mandi_earning}
+   जादा नफा: ₹{premium_amount} 💰
+   
+   स्वीकारायचे का?
+   Reply: YES — जोडण्यासाठी / to connect
+   Reply: NO — नाकारण्यासाठी / to reject
+   Reply: PRICE ₹{counter} — किंमत बदलण्यासाठी"
+
+Jharkhand (Hindi):
+  "नमस्ते {name} ji! 🌿
+   
+   एक व्यापारी आपके {commodity} खरीदना चाहते हैं.
+   
+   🏢 {trader_business_name}
+   📦 {commodity} Grade {grade} — {qty} kg
+   💰 कीमत: ₹{price}/kg
+      (आज मंडी: ₹{mandi_price}/kg)
+   📅 तारीख: {date_from} से {date_to}
+   🚛 खेत से लेंगे: {YES/NO}
+   
+   {jardalu_gi_badge if applicable}
+   
+   आपका बाग: {acres} एकड़ = ~{est_kg} kg
+   कुल कमाई: ₹{estimated_earning}
+   मंडी से ज्यादा: ₹{premium_amount} 💰
+   
+   जवाब दें:
+   YES — जोड़ने के लिए
+   NO — मना करने के लिए
+   PRICE ₹{counter} — दाम बदलने के लिए"
+
+FLOW 2 — Plant priority offer (Maharashtra only):
+
+  "नमस्ते {name} ji! 🌿
+   
+   Tasgaon Plant — या हंगामात प्रक्रिया करण्यासाठी
+   जागा आहे.
+   Tasgaon Plant has capacity this week:
+   
+   🏭 Activity: Washing + Sorting + Cleaning
+   🌾 Your estimated lot: {est_kg} kg
+   💰 Plant rate: ₹{plant_price}/kg
+   ⚙️ Processing fee: ₹{processing_fee}/kg
+   💵 Net to you: ₹{net_price}/kg
+   
+   vs direct mandi: ₹{mandi_price}/kg
+   Extra per kg: ₹{premium}/kg
+   Total extra: ₹{total_premium} 💰
+   
+   Slot confirm करायचे का?
+   Reply: YES — confirm
+   Reply: NO — skip"
+
+FLOW 3 — Farmer announces lot manually:
+
+Farmer sends "LOT" or "बेचना है" or "विकायचे आहे":
+
+Bot collects:
+  Quantity (kg)?
+  Grade (A/B/C)?
+  Harvest date?
+  Minimum price?
+
+Creates farmer_lots record.
+Runs matching immediately.
+If match found: send offer within 1 hour.
+
+FLOW 4 — Bid notification (reverse auction):
+
+  "⚡ नवीन बोली / New Bid Received!
+   
+   तुमच्या {commodity} साठी:
+   For your {commodity} lot:
+   
+   Bid: ₹{bid_price}/kg
+   Bidder: {trader_location}
+   
+   Current highest: ₹{highest_bid}/kg
+   Auction closes: {close_time}
+   
+   अजून बोली येऊ शकतात.
+   More bids may arrive.
+   Reply ACCEPT to sell now
+   Reply WAIT to continue auction"
+
+────────────────────────────────────────────────────────────────
+4.7 TRADE CONFIRMATION FLOW
+────────────────────────────────────────────────────────────────
+
+7 days after connection made:
+
+To farmer:
+  "नमस्ते {name} ji,
+   {trader_name} सोबत व्यापार झाला का?
+   Did the trade happen with {trader_name}?
+   
+   Reply: YES ₹{price} — व्यापार झाला
+   Reply: NO — व्यापार झाला नाही
+   Reply: PENDING — अजून चालू आहे"
+
+To trader:
+  "Did you complete the trade with
+   {farmer_name} for {commodity}?
+   
+   Reply: YES ₹{price} kg{qty}
+   Reply: NO
+   Reply: PENDING"
+
+When both confirm:
+  Create farmer_trades record
+  Calculate premium achieved
+  Calculate platform fee
+  Send achievement summary to farmer:
+    "✅ व्यापार नोंदवला!
+     Grade A {commodity}: ₹{price}/kg
+     vs mandi: ₹{mandi_price}/kg
+     तुम्ही ₹{premium_total} जास्त मिळवले! 🎉"
+
+═══════════════════════════════════════════════════════════════
+SECTION 5 — HINDI LANGUAGE SUPPORT
+═══════════════════════════════════════════════════════════════
+
+File: data/translations/hindi.json
+
+Add all 40+ message keys in Hindi.
+Jharkhand farmers receive Hindi messages.
+Bihar/Bengal traders receive English messages.
+
+Key translations needed:
+  greeting, service_menu, variety_collection,
+  harvest_advisory_flowering,
+  harvest_advisory_fruit_set,
+  harvest_advisory_harvest_ready,
+  spray_advisory_spray_now,
+  spray_advisory_delay,
+  market_recommendation_hold,
+  market_recommendation_sell,
+  lot_offer_received,
+  trade_confirmed,
+  payment_received,
+  booking_confirmed,
+  plant_priority_offer,
+  gi_certificate_message
+
+Use Claude API to generate Hindi translations
+from Marathi originals as starting point.
+Native speaker review recommended before launch.
+
+Language routing update in pipelines/i18n.py:
+  'JH' region → Hindi default
+  Farmer preferred_language overrides region default
+  Konkani still supported for Maharashtra coastal
+
+═══════════════════════════════════════════════════════════════
+SECTION 6 — FLUTTER AGENT APP UPDATES
+═══════════════════════════════════════════════════════════════
+
+────────────────────────────────────────────────────────────────
+6.1 REGION SELECTOR
+────────────────────────────────────────────────────────────────
+
+Agent login → select region:
+  Maharashtra (ShetMitra)
+  Jharkhand (Bagaan Sathi)
+
+Region stored in agent profile.
+All farmers registered by this agent
+get region_code automatically.
+
+GPS auto-detection:
+  If GPS in Jharkhand bbox → suggest JH
+  If GPS in Maharashtra bbox → suggest MH
+  Agent can override
+
+────────────────────────────────────────────────────────────────
+6.2 JHARKHAND-SPECIFIC REGISTRATION FIELDS
+────────────────────────────────────────────────────────────────
+
+When region = JH and crop = Mango add:
+  Variety dropdown:
+    Mallika, Amrapali, Jardalu,
+    Himsagar, Langra, Other
+  
+  Tree count: number input
+  Tree age (years): number input
+  Irrigation: Drip / Flood / Rain-fed / None
+  
+  Jardalu GI check (auto):
+    If variety = Jardalu AND GPS in GI zone:
+    Show green badge: "GI Zone ✅"
+    
+  Last season yield (kg/tree): optional
+
+────────────────────────────────────────────────────────────────
+6.3 BAGAAN SATHI BRANDING IN APP
+────────────────────────────────────────────────────────────────
+
+When region = JH:
+  App header shows: "Bagaan Sathi"
+  Sub-header: "Sahyadri Krushi Intelligence"
+  Color scheme: same forest green
+  Language default: Hindi
+
+When region = MH:
+  App header shows: "ShetMitra"
+  Language default: Marathi
+
+═══════════════════════════════════════════════════════════════
+SECTION 7 — WPF DASHBOARD ADDITIONS
+═══════════════════════════════════════════════════════════════
+
+────────────────────────────────────────────────────────────────
+7.1 NEW SCREEN — MARKETPLACE
+────────────────────────────────────────────────────────────────
+
+Add "Marketplace" to sidebar between
+Trader Intelligence and Pipeline.
+
+Tab 1: Active Lots
+  All farmer_lots with status=AVAILABLE
+  Filter by region, commodity, grade, week
+  Show: lot_ref, farmer, qty, grade, harvest,
+        price, match_count, status
+
+Tab 2: Active Requirements
+  All trader_requirements with status=ACTIVE
+  Filter by region, commodity, trader, date
+  Show: trader, commodity, qty, grade, price,
+        collection_dates, matched_count
+
+Tab 3: Matches
+  All lot_matches
+  Show: lot, farmer, trader, score, response,
+        connection_made, created
+  Filter by status, region, commodity
+
+Tab 4: Trades Completed
+  All farmer_trades
+  Key metrics:
+    Total trades this month
+    Average premium achieved (%)
+    Total platform fees earned
+    Best performing commodity
+
+Tab 5: Aggregations
+  All lot_aggregations
+  Show consolidated lots
+  Broadcast to traders button
+
+────────────────────────────────────────────────────────────────
+7.2 MARKETPLACE STAT CARDS ON DASHBOARD
+────────────────────────────────────────────────────────────────
+
+Add to Dashboard screen:
+  Active Lots: X (X kg available)
+  Active Requirements: X (X traders)
+  Matches This Week: X
+  Trades Completed: X
+  Avg Premium Achieved: X%
+  Platform Fees This Month: ₹X,XXX
+
+────────────────────────────────────────────────────────────────
+7.3 REGION FILTER ON ALL SCREENS
+────────────────────────────────────────────────────────────────
+
+Add region filter to all existing screens:
+  All / Maharashtra (ShetMitra) /
+  Jharkhand (Bagaan Sathi)
+
+Default: All regions shown together.
+Pankaj sees both regions in one dashboard.
+
+════════════════════════════════════════════════════════════════
+SECTION 8 — API ENDPOINTS
+════════════════════════════════════════════════════════════════
+
+New file: routes/marketplace.py
+
+POST /marketplace/lots
+  Create farmer lot (manual or auto)
+  Body: farmer_id, commodity, variety,
+        quantity_kg, harvest_from, harvest_to,
+        min_price
+
+GET /marketplace/lots
+  List lots with filters
+  Params: region, commodity, status, week
+
+POST /marketplace/requirements
+  Create trader requirement from WhatsApp
+  Body: trader_id, commodity, variety,
+        quantity_min, price, dates, location
+
+GET /marketplace/matches/{lot_id}
+  Get all matches for a lot
+
+POST /marketplace/matches/{match_id}/respond
+  Farmer or trader response
+  Body: response (ACCEPTED/REJECTED/COUNTER),
+        counter_price
+
+POST /marketplace/trades/confirm
+  Confirm trade completion
+  Body: match_id, actual_price, actual_qty
+
+GET /marketplace/analytics
+  Trade volume, premium achieved, fees
+
+POST /internal/run-matching
+  Manually trigger matching engine
+  For testing and emergency use
+
+GET /regions
+  List all active regions
+
+New file: routes/gi.py
+
+GET /gi/verify/{plot_id}
+  Verify GI eligibility for Jardalu
+  Returns certificate if eligible
+
+GET /gi/certificate/{plot_id}
+  Generate GI certificate text
+
+════════════════════════════════════════════════════════════════
+SECTION 9 — SCHEDULER ADDITIONS
+════════════════════════════════════════════════════════════════
+
+Add to pipelines/scheduler.py:
+
+JOB: DAILY_MATCHING
+  Cron: daily at 16:00 IST
+  Function: matching_engine.run_daily_matching()
+  Description: Match trader requirements
+               with farmer lots
+
+JOB: PLANT_PRIORITY_QUEUE
+  Cron: daily at 17:00 IST (MH only)
+  Function: plant_supply_queue.run_plant_priority()
+  Description: Fill Tasgaon plant with supply
+
+JOB: WEEKLY_AGGREGATION
+  Cron: Sunday at 23:00 IST
+  Function: lot_aggregator.run_weekly_aggregation()
+  Description: Group small lots into tradeable lots
+
+JOB: LOT_EXPIRY_CLEANUP
+  Cron: daily at 02:00 IST
+  Function: cleanup expired lots and requirements
+  Description: Mark expired records as EXPIRED
+
+JOB: TRADE_CONFIRMATION_FOLLOWUP
+  Cron: daily at 10:00 IST
+  Function: Send confirmation WhatsApp
+            to farmer + trader for trades
+            that are 7 days old and unconfirmed
+
+Total scheduled jobs after additions: 13
+
+═══════════════════════════════════════════════════════════════
+SECTION 10 — 10-AGENT SWARM BUILD PLAN
+═══════════════════════════════════════════════════════════════
+
+All 10 agents run in PARALLEL simultaneously.
+
+────────────────────────────────────────────────────────────────
+AGENT 1 — DATABASE AGENT
+────────────────────────────────────────────────────────────────
+Create migration 009_bagaan_sathi_marketplace.sql:
+  CREATE regions table + seed MH and JH rows
+  ALTER farmers — add region_code column
+  CREATE trader_requirements table
+  CREATE farmer_lots table
+  CREATE lot_matches table
+  CREATE lot_aggregations table
+  CREATE farmer_trades table
+  CREATE lot_bids table
+  CREATE INDEX for all new tables
+  Apply migration to live TEST Supabase
+  Verify all tables created
+  Print table inventory
+
+────────────────────────────────────────────────────────────────
+AGENT 2 — JHARKHAND DATA AGENT
+────────────────────────────────────────────────────────────────
+Add Jharkhand/Bihar/Bengal mandis to mandi_config.
+Update data/variety_config.json with 5 new varieties:
+  Mallika, Amrapali, Jardalu, Himsagar, Langra_JH
+Import CEDA data for all new mandis:
+  State: Jharkhand, Bihar, West Bengal, Delhi
+  Commodity: Mango
+  Years: 2015-2026
+Push to price_history_training in TEST
+Train 3 Jharkhand mango models:
+  arima_mango_mallika_jharkhand.pkl
+  arima_mango_jardalu_jharkhand.pkl
+  arima_mango_amrapali_jharkhand.pkl
+Report MAPE for each.
+Add AMED Jharkhand + Bihar bboxes to .env
+
+────────────────────────────────────────────────────────────────
+AGENT 3 — MATCHING ENGINE AGENT
+────────────────────────────────────────────────────────────────
+Build pipelines/matching_engine.py:
+  Full matching logic from Section 4.2
+  calculate_match_score() with 6 factors
+  run_daily_matching() main function
+  date_range_overlap() helper
+  
+Build pipelines/lot_aggregator.py:
+  Full aggregation logic from Section 4.3
+  run_weekly_aggregation() main function
+  create_aggregated_lot() helper
+  broadcast_aggregated_lot_to_traders()
+
+Build pipelines/plant_supply_queue.py:
+  Full plant priority logic from Section 4.4
+  run_plant_priority_queue() main function
+  send_plant_priority_offer() helper
+
+Add all 5 new jobs to pipelines/scheduler.py
+
+Write tests:
+  test_matching_engine.py
+  Test score calculation all 6 factors
+  Test commodity mismatch returns 0
+  Test partial quantity match
+  Test date range overlap
+  Test aggregation groups correctly
+  All tests must pass
+
+────────────────────────────────────────────────────────────────
+AGENT 4 — WHATSAPP MARKETPLACE AGENT
+────────────────────────────────────────────────────────────────
+Build all WhatsApp flows from Section 4.5-4.7:
+
+Update api/webhooks_trader.py:
+  Add "I NEED" handler
+  Collect requirement step by step
+  Save to trader_requirements
+
+Update api/webhooks_farmer.py (or create):
+  Add "LOT" / "विकायचे" / "बेचना" handler
+  Collect lot details
+  Run immediate matching
+  
+Create api/webhooks_marketplace.py:
+  Handle farmer YES/NO/PRICE responses
+  Handle trader ACCEPT/COUNTER/SKIP responses
+  Handle BID responses for auctions
+  Handle trade confirmation YES/NO
+
+Create api/marketplace_whatsapp.py:
+  send_farmer_trade_offer()
+  send_trader_lot_alert()
+  send_plant_priority_offer()
+  send_trade_confirmation_request()
+  send_trade_completion_summary()
+  All messages use region-based sender name
+
+Write tests:
+  test_marketplace_whatsapp.py
+  Test Marathi offer message for MH farmer
+  Test Hindi offer message for JH farmer
+  Test trader requirement collection flow
+  Test bid response handling
+
+────────────────────────────────────────────────────────────────
+AGENT 5 — MULTI-REGION AGENT
+────────────────────────────────────────────────────────────────
+Implement multi-region WhatsApp sender names:
+
+Update api/whatsapp_sender.py:
+  get_sender_name(farmer_id) function
+  get_report_footer(farmer_id) function
+  Both read from regions table via farmer.region_code
+
+Update ALL WhatsApp message functions:
+  Daily report sender name
+  Advisory message sender
+  Booking confirmation sender
+  Market alert sender
+  All trader messages remain English only
+
+Update pipelines/report_generator.py:
+  Report footer uses region sender name
+
+Update pipelines/i18n.py:
+  Add Hindi language support
+  Route JH region to Hindi
+  Route MH region to Marathi/Konkani
+
+Create data/translations/hindi.json:
+  All 40+ message keys in Hindi
+  Use Claude API to generate from Marathi
+  Flag keys needing native speaker review
+
+Write tests:
+  test_multi_region.py
+  Test MH farmer gets ShetMitra sender
+  Test JH farmer gets Bagaan Sathi sender
+  Test Hindi message routing for JH
+
+────────────────────────────────────────────────────────────────
+AGENT 6 — GI VERIFICATION AGENT
+────────────────────────────────────────────────────────────────
+Build geo/gi_verifier.py:
+  Full GIVerifier class from Section 3.3
+  verify_jardalu() method
+  get_gi_certificate_text() method
+  
+Add GI check to AMED pipeline:
+  After AMED fetch for JH farms:
+    If variety = Jardalu:
+      Run GI verification
+      Store in farm_plots.gi_verified
+      Store certificate ref
+
+Create routes/gi.py:
+  GET /gi/verify/{plot_id}
+  GET /gi/certificate/{plot_id}
+
+Update variety_config.json:
+  Add gi_certification_eligible field
+  Add gi_zone_bbox for Jardalu
+
+Update farmer WhatsApp messages:
+  If Jardalu AND gi_verified:
+    Add GI badge to all messages
+    Show premium multiplier (1.60x)
+  
+Update marketplace matching:
+  If trader requirement gi_required=True:
+    Only match gi_verified lots
+
+Write tests:
+  test_gi_verifier.py
+  Test farm in GI zone returns eligible
+  Test farm outside zone returns not eligible
+  Test certificate text generation
+
+────────────────────────────────────────────────────────────────
+AGENT 7 — FASTAPI ROUTES AGENT
+────────────────────────────────────────────────────────────────
+Create routes/marketplace.py:
+  All endpoints from Section 8
+  POST /marketplace/lots
+  GET /marketplace/lots
+  POST /marketplace/requirements
+  GET /marketplace/matches/{lot_id}
+  POST /marketplace/matches/{match_id}/respond
+  POST /marketplace/trades/confirm
+  GET /marketplace/analytics
+  POST /internal/run-matching
+
+Create routes/gi.py:
+  GET /gi/verify/{plot_id}
+  GET /gi/certificate/{plot_id}
+
+Create routes/regions.py:
+  GET /regions — list all active regions
+
+Mount all new routes in main.py
+
+Auto-create farmer_lots records:
+  After AMED pipeline runs for a farm:
+    If harvest_date_predicted within 21 days:
+      Auto-create farmer_lots record
+      Run immediate matching
+      Notify farmer if match found
+
+Write tests:
+  test_marketplace_routes.py
+  Test all endpoint responses
+  Test auto lot creation from pipeline
+
+────────────────────────────────────────────────────────────────
+AGENT 8 — FLUTTER APP AGENT
+────────────────────────────────────────────────────────────────
+Update shetmitra_agent Flutter app:
+
+Add region selector to agent login:
+  Two options: Maharashtra / Jharkhand
+  GPS auto-detection of region
+  Region stored with agent profile
+
+Update crop/variety dropdowns:
+  Show Jharkhand varieties when JH selected:
+    Mallika, Amrapali, Jardalu, Himsagar, Langra
+
+Add Jharkhand mango registration fields:
+  Tree count, tree age
+  Irrigation type
+  GI zone badge for Jardalu farms
+
+Update app header by region:
+  JH: "Bagaan Sathi"
+  MH: "ShetMitra"
+
+Update language selection:
+  Add Hindi to dropdown
+  Auto-select Hindi for JH region
+
+Add Jardalu GI badge:
+  Show on farm card if gi_verified = true
+  Green badge: "Jardalu GI ✅"
+  Show premium estimate
+
+Rebuild APK — verify 0 errors
+
+────────────────────────────────────────────────────────────────
+AGENT 9 — WPF DASHBOARD AGENT
+────────────────────────────────────────────────────────────────
+Add Marketplace screen to WPF admin dashboard:
+  Create admin_wpf/Views/MarketplaceView.xaml
+  Create admin_wpf/ViewModels/MarketplaceViewModel.cs
+  5 tabs: Lots / Requirements / Matches /
+          Trades / Aggregations
+  All data from Supabase via new endpoints
+
+Add region filter to all existing screens:
+  Farmers, Analytics, Drone, Plant, Alerts
+  All / Maharashtra / Jharkhand dropdown
+
+Update Dashboard screen:
+  Add marketplace stat cards
+  Active lots, active requirements,
+  matches this week, avg premium,
+  platform fees this month
+
+Update Belt Intelligence screen:
+  Add Jharkhand + Bihar tab
+  AMED harvest forecast for Jharkhand belt
+
+Add "Marketplace" to sidebar between
+Trader Intelligence and Pipeline
+
+Add region badge to farmer list:
+  MH badge (green) or JH badge (gold)
+
+Add SupabaseService methods:
+  GetMarketplaceLots(filter)
+  GetTraderRequirements(filter)
+  GetLotMatches(lot_id)
+  GetFarmerTrades(filter)
+  GetMarketplaceAnalytics()
+  TriggerMatching()
+
+dotnet build — verify 0 errors
+
+────────────────────────────────────────────────────────────────
+AGENT 10 — INTEGRATION TEST AGENT
+────────────────────────────────────────────────────────────────
+Write and run full integration test suite:
+
+tests/test_bagaan_sathi.py:
+  Test JH farmer gets Hindi messages
+  Test JH farmer gets Bagaan Sathi sender
+  Test Jardalu GI verification
+  Test Jharkhand AMED bbox coverage
+  Test new variety configs present
+
+tests/test_marketplace.py:
+  Test lot creation (manual and auto)
+  Test requirement creation via WhatsApp
+  Test matching engine finds correct matches
+  Test match score calculation accuracy
+  Test no match for commodity mismatch
+  Test farmer receives Marathi offer (MH)
+  Test farmer receives Hindi offer (JH)
+  Test plant priority queue (MH only)
+  Test lot aggregation groups 3 small farms
+  Test trade confirmation flow
+  Test GI requirement matching
+
+Run full test suite:
+  python -m pytest tests/ -v
+  Target: 250+ tests all passing
+  Zero regressions from prior 224 tests
+
+════════════════════════════════════════════════════════════════
+SECTION 11 — INTEGRATION TEST PLAN (manual)
+════════════════════════════════════════════════════════════════
+
+After all 10 agents complete:
+
+TEST 1 — Region routing:
+  Create test farmer with region_code='JH'
+  Trigger advisory
+  Verify: sender name = "Bagaan Sathi"
+  Verify: message in Hindi
+
+TEST 2 — Jardalu GI:
+  Create test plot at lat=24.5, lng=87.0
+    (inside Jardalu GI zone)
+  Set variety = Jardalu
+  Call GET /gi/verify/{plot_id}
+  Verify: gi_eligible = true
+  Verify: certificate_ref generated
+
+TEST 3 — Matching engine:
+  Create trader requirement:
+    commodity=Mango, variety=Mallika,
+    qty_min=500, price=₹20, region=JH
+  Create farmer lot:
+    commodity=Mango, variety=Mallika,
+    qty=800, harvest_from=next week, region=JH
+  Run POST /internal/run-matching
+  Verify: lot_matches record created
+  Verify: farmer receives Hindi offer
+  Verify: match_score > 0.70
+
+TEST 4 — Plant priority queue:
+  Create MH farmer with Grade A grapes
+  harvesting this week
+  Run plant priority queue
+  Verify: farmer receives Marathi plant offer
+  Verify: offer shows premium vs mandi
+
+TEST 5 — Lot aggregation:
+  Create 3 small MH farmer lots
+    each 400 kg Grade A Kishmish
+    same harvest week
+  Run weekly aggregation
+  Verify: lot_aggregations record = 1,200 kg
+  Verify: trader receives aggregated lot alert
+
+TEST 6 — Full trade flow:
+  Complete steps 3-5 above
+  Farmer replies YES
+  Verify: connection made to trader
+  After 7 days: send confirmation
+  Both confirm YES ₹22
+  Verify: farmer_trades record created
+  Verify: premium calculated correctly
+  Verify: platform fee calculated
+
+TEST 7 — WPF dashboard:
+  dotnet build — 0 errors
+  Marketplace screen loads all 5 tabs
+  Region filter works on Farmers screen
+
+TEST 8 — Full pytest:
+  python -m pytest tests/ -v
+  250+ tests passing
+
+═══════════════════════════════════════════════════════════════
+SECTION 12 — SWARM INSTRUCTION FOR CLAUDE CODE
+═══════════════════════════════════════════════════════════════
+
+PASTE THIS INTO CLAUDE CODE MAX:
+
+Read this complete SDD for full context then
+launch 10 parallel sub-agents simultaneously.
+All agents start at the same time.
+No agent waits for another.
+
+AGENT 1 — Database:
+  Create migration 009 with all new tables
+  from SDD Section 4.1 and regions table
+  from Section 2.1.
+  Apply to live TEST Supabase.
+  Verify all tables created.
+
+AGENT 2 — Jharkhand Data:
+  Add Jharkhand/Bihar/Bengal mandis.
+  Update variety_config.json with 5 new
+  Jharkhand varieties from Section 3.2.
+  Import CEDA mango data for all new mandis.
+  Train 3 Jharkhand ML models.
+  Add Jharkhand AMED bboxes to .env.
+
+AGENT 3 — Matching Engine:
+  Build matching_engine.py, lot_aggregator.py,
+  plant_supply_queue.py from Section 4.2-4.4.
+  Add 5 new scheduler jobs.
+  Write and run tests.
+
+AGENT 4 — WhatsApp Marketplace:
+  Build all WhatsApp flows from Section 4.5-4.7.
+  All farmer messages: Marathi (MH) / Hindi (JH).
+  All trader messages: English only.
+  Write and run tests.
+
+AGENT 5 — Multi-Region:
+  Implement region-based sender names.
+  Update all WhatsApp senders.
+  Create Hindi translations JSON.
+  Update i18n routing for JH → Hindi.
+  Write and run tests.
+
+AGENT 6 — GI Verification:
+  Build geo/gi_verifier.py from Section 3.3.
+  Add GI check to AMED pipeline.
+  Create /gi routes.
+  Add Jardalu GI badge to farmer messages.
+  Write and run tests.
+
+AGENT 7 — FastAPI Routes:
+  Create routes/marketplace.py,
+  routes/gi.py, routes/regions.py
+  from Section 8.
+  Auto-create lots from AMED pipeline.
+  Write and run tests.
+
+AGENT 8 — Flutter App:
+  Add region selector, Jharkhand varieties,
+  GI badge, Bagaan Sathi branding,
+  Hindi language from Section 6.
+  Rebuild APK — verify 0 errors.
+
+AGENT 9 — WPF Dashboard:
+  Add Marketplace screen (5 tabs).
+  Add region filter to all screens.
+  Update dashboard stat cards.
+  Add Jharkhand Belt Intelligence tab.
+  dotnet build — verify 0 errors.
+
+AGENT 10 — Integration Tests:
+  Write tests/test_bagaan_sathi.py and
+  tests/test_marketplace.py from Section 11.
+  Run full pytest suite.
+  Target: 250+ tests passing.
+  Zero regressions.
+
+Report when all 10 agents complete with:
+  Migration status
+  Model MAPE for Jharkhand varieties
+  Test results (X/X passing)
+  Any blockers
+
+═══════════════════════════════════════════════════════════════
+SECTION 13 — REVENUE PROJECTION
+═══════════════════════════════════════════════════════════════
+
+MAHARASHTRA (existing + marketplace):
+  2027: ₹40-60L (existing + 20 trades/month)
+  2028: ₹1.5-2Cr (100 trades/month at 2%)
+  2029: ₹3-4Cr (full marketplace scale)
+
+JHARKHAND (Bagaan Sathi):
+  2027: ₹5-10L (pilot 50 farmers via Deepika)
+  2028: ₹50-80L (500 farmers + Bihar traders)
+  2029: ₹1-2Cr (5000 farmers + full marketplace)
+
+JARDALU GI PREMIUM:
+  100 GI-verified lots x ₹1,000 cert = ₹1L/year
+  Export facilitation 2% of ₹5Cr exports = ₹10L
+
+COMBINED 2029:
+  Maharashtra: ₹3-4Cr
+  Jharkhand: ₹1-2Cr
+  Trader subscriptions: ₹1.5-2Cr
+  GI + export: ₹10-15L
+  TOTAL: ₹5.5-8Cr/year
+
+═══════════════════════════════════════════════════════════════
+SECTION 14 — DEEPIKA PANDEY SINGH ACTION PLAN
+═══════════════════════════════════════════════════════════════
+
+MEETING AGENDA (propose via Political Edge channel):
+
+1. Show ShetMitra Maharashtra results
+   (247 farmers, 98% delivery, price premium data)
+
+2. Propose Bagaan Sathi for Mahagama constituency
+   "Your farmers are losing ₹8-10/kg to middlemen.
+    We can change that."
+
+3. Request:
+   - Introduction to 20 farmers in Godda
+   - Use of constituency office as coordination hub
+   - Political endorsement for farmer outreach
+   - Introduction to Bihar traders she knows
+
+4. Offer:
+   - Free reports for all farmers she introduces
+   - Co-branding: "Bagaan Sathi — supported by
+     Deepika Pandey Singh, MLA Mahagama"
+   - Data on farmer income improvement to use
+     in constituency communications
+   - Political Edge integration: farmer welfare
+     updates in her constituency dashboard
+
+5. Government angle:
+   - Jharkhand Horticulture Department partnership
+   - NABARD Jharkhand grant application
+     (Bagaan Sathi as tech partner)
+   - Jardalu GI promotion — she can champion
+     this at state level
+
+═══════════════════════════════════════════════════════════════
+END OF SYSTEM DESIGN DOCUMENT
+Sahyadri Krushi Intelligence — Confidential
+Bagaan Sathi + Trader-Farmer Connect
+═══════════════════════════════════════════════════════════════

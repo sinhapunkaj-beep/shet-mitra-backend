@@ -1,0 +1,38 @@
+{
+  "_note": "Mandi correspondent stub entries for the Bagaan Sathi JH expansion. Each entry is a placeholder until real correspondents are recruited on the ground — keep active=false in production. The detector and aggregation pipelines read this file lazily; missing entries fall back to the default synthetic provider in pipelines/flash_alert_detector.py.",
+  "correspondents": [
+    {
+      "name": "Bhagalpur correspondent (placeholder)",
+      "mandi_id": "Bhagalpur APMC",
+      "mandi_name": "Bhagalpur APMC",
+      "state": "Bihar",
+      "region_code": "JH",
+      "phone": "+91-9999000001",
+      "preferred_language": "Hindi",
+      "active": false,
+      "notes": "Bhagalpur is the Jardalu GI mandi anchor. Recruit a Hindi-speaking correspondent before launch."
+    },
+    {
+      "name": "Malda correspondent (placeholder)",
+      "mandi_id": "Malda APMC",
+      "mandi_name": "Malda APMC",
+      "state": "West Bengal",
+      "region_code": "JH",
+      "phone": "+91-9999000002",
+      "preferred_language": "Hindi",
+      "active": false,
+      "notes": "Malda is the Himsagar mandi for West Bengal-side JH supply. Hindi-speaking correspondent acceptable; Bengali preferred long-term."
+    },
+    {
+      "name": "Delhi Azadpur correspondent (placeholder)",
+      "mandi_id": "Delhi Azadpur APMC",
+      "mandi_name": "Delhi Azadpur APMC",
+      "state": "Delhi",
+      "region_code": "DL",
+      "phone": "+91-9999000003",
+      "preferred_language": "English",
+      "active": false,
+      "notes": "Azadpur is the national price-signal anchor for mango. Sets the export / urban-trader reference price; English correspondent OK because the daily report mixes Hindi+English."
+    }
+  ]
+}

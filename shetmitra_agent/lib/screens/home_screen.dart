@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../config.dart';
 import '../models/agent.dart';
 import '../state/agent_state.dart';
 import '../state/auth_state.dart';
 import '../utils/i18n.dart';
+import '../utils/region_helper.dart';
 import 'belt_intelligence_screen.dart';
 import 'farmers_list_screen.dart';
 import 'register_farmer_screen.dart';
@@ -20,7 +20,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _index = 0;
-  String _locale = AppConfig.defaultLocale;
+  String? _locale;
 
   late final List<Widget Function(String)> _builders = <Widget Function(String)>[
     (String l) => FarmersListScreen(locale: l),
@@ -59,11 +59,33 @@ class _HomeScreenState extends State<HomeScreen> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
+    // If the user has not picked a locale yet, default it from the
+    // agent's region (JH → Hindi, MH → Marathi).
+    final String locale = _locale ??
+        RegionHelper.defaultLocaleForRegionCode(agent.regionCode);
+    final String brand = RegionHelper.brandForRegionCode(agent.regionCode);
+
     return Scaffold(
       appBar: AppBar(
+        // Forest-green scheme is already the seed colour. Keep both
+        // brands on the same colour scheme per SDD §6.3.
         title: Row(
           children: <Widget>[
-            Text(I18n.t('app_title', _locale)),
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  brand,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+                Text(
+                  I18n.t('app_subtitle', locale),
+                  style: const TextStyle(
+                      fontSize: 11, fontWeight: FontWeight.w400),
+                ),
+              ],
+            ),
             const SizedBox(width: 12),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -79,7 +101,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
-      body: _builders[_index](_locale),
+      body: _builders[_index](locale),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
         onDestinationSelected: (int i) => setState(() => _index = i),
@@ -87,22 +109,22 @@ class _HomeScreenState extends State<HomeScreen> {
           NavigationDestination(
             icon: const Icon(Icons.people_outline),
             selectedIcon: const Icon(Icons.people),
-            label: I18n.t('farmers', _locale),
+            label: I18n.t('farmers', locale),
           ),
           NavigationDestination(
             icon: const Icon(Icons.person_add_alt),
             selectedIcon: const Icon(Icons.person_add),
-            label: I18n.t('add_farmer', _locale),
+            label: I18n.t('add_farmer', locale),
           ),
           NavigationDestination(
             icon: const Icon(Icons.insights_outlined),
             selectedIcon: const Icon(Icons.insights),
-            label: I18n.t('belt', _locale),
+            label: I18n.t('belt', locale),
           ),
           NavigationDestination(
             icon: const Icon(Icons.settings_outlined),
             selectedIcon: const Icon(Icons.settings),
-            label: I18n.t('settings', _locale),
+            label: I18n.t('settings', locale),
           ),
         ],
       ),

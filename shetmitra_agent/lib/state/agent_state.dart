@@ -99,6 +99,9 @@ class AgentState extends ChangeNotifier {
     String? bearingYear,
     String? irrigationType,
     String? cropRegion,
+    String? regionCode,
+    double? lastYieldKgPerTree,
+    bool giVerified = false,
     bool overrideTerritory = false,
     String? overrideReason,
   }) async {
@@ -113,6 +116,8 @@ class AgentState extends ChangeNotifier {
         'area_acres': areaAcres,
         'centroid_lat': centroidLat,
         'centroid_lng': centroidLng,
+        if (regionCode != null && regionCode.isNotEmpty)
+          'region_code': regionCode,
         if (overrideTerritory)
           'territory_override_reason': overrideReason ?? 'unspecified',
       };
@@ -132,6 +137,11 @@ class AgentState extends ChangeNotifier {
         'bearing_year': bearingYear,
         'irrigation_type': irrigationType,
         'crop_region': cropRegion,
+        if (regionCode != null && regionCode.isNotEmpty)
+          'region_code': regionCode,
+        if (lastYieldKgPerTree != null)
+          'last_season_yield_kg_per_tree': lastYieldKgPerTree,
+        if (giVerified) 'gi_verified': true,
       };
       await _client.post('/farm_plots', plotBody);
 

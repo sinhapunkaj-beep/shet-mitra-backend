@@ -49,6 +49,8 @@
                     <ListBoxItem Content="Alerts" />
                     <ListBoxItem Content="Analytics" />
                     <ListBoxItem Content="Price Analysis" />
+                    <ListBoxItem Content="Trader Intelligence" />
+                    <ListBoxItem Content="Marketplace" />
                     <ListBoxItem Content="Belt Intelligence" />
                     <ListBoxItem Content="Drone Operations" />
                 </ListBox>

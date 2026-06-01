@@ -49,6 +49,17 @@ HARVEST_TRIGGER_MIN_COUNT = int(os.environ.get("HARVEST_TRIGGER_MIN_COUNT", "10"
 PRICE_COMMODITIES = ("Dry_Grapes", "Pomegranate")
 MANGO_VARIETIES = ("Alphonso", "Kesar", "Dasheri", "Totapuri", "Banganapalli")
 
+# Jharkhand mango variety models produced by the ML training agent (Agent 4).
+# Each entry maps a variety -> the pickle filename the trainer will write
+# under data/models/. The retrainer tolerates FileNotFoundError so a
+# partial swarm doesn't break the price-model retrain leg.
+JH_MANGO_VARIETIES: tuple[str, ...] = ("Mallika", "Jardalu", "Amrapali")
+JH_MANGO_MODEL_PICKLES: dict[str, str] = {
+    "Mallika":  "arima_mango_mallika_jharkhand.pkl",
+    "Jardalu":  "arima_mango_jardalu_jharkhand.pkl",
+    "Amrapali": "arima_mango_amrapali_jharkhand.pkl",
+}
+
 # Baseline MAPE numbers anchor the "25% worse than baseline" check. Values
 # match the SDD targets for the respective v2/v3 pickles; tighten over time
 # by updating model_registry rows.
@@ -254,10 +265,73 @@ def _default_retrain_mango(varieties: Iterable[str]) -> list[RetrainResult]:
     return out
 
 
+def _default_retrain_mango_jh(
+    varieties: Iterable[str] = JH_MANGO_VARIETIES,
+) -> list[RetrainResult]:
+    """Retrain (or detect-and-register) the Jharkhand mango models.
+
+    The ML training agent (Agent 4) produces these pickles under
+    ``data/models/`` — e.g. ``arima_mango_mallika_jharkhand.pkl``. When
+    the file exists we register the pickle path against the model_registry
+    via a RetrainResult; when the file is missing (partial swarm) we
+    tolerate FileNotFoundError and log a warning so the retrain leg does
+    not crash. We deliberately do NOT call into the trainer because the
+    JH trainer is owned by a sibling agent.
+    """
+    models_dir = Path(__file__).resolve().parent.parent / "data" / "models"
+    out: list[RetrainResult] = []
+    for variety in varieties:
+        pickle_name = JH_MANGO_MODEL_PICKLES.get(variety)
+        if pickle_name is None:
+            logger.warning(
+                "no JH pickle filename registered for variety %s — skipping",
+                variety,
+            )
+            continue
+        pickle_path = models_dir / pickle_name
+        try:
+            # Use stat() so a missing pickle raises FileNotFoundError that
+            # we can swallow cleanly below.
+            pickle_path.stat()
+        except FileNotFoundError:
+            logger.warning(
+                "JH mango pickle missing for %s at %s — skipping (Agent 4 "
+                "training swarm may not have completed yet)",
+                variety, pickle_path,
+            )
+            continue
+        except OSError as exc:  # noqa: BLE001
+            logger.warning(
+                "JH mango pickle stat failed for %s: %s — skipping",
+                variety, exc,
+            )
+            continue
+        # Pickle found — record it for the registry. We use NaN for MAPE
+        # because Agent 4 owns the metric reporting; the entry exists so
+        # downstream callers know the JH model has shipped.
+        out.append(RetrainResult(
+            commodity="Mango",
+            variety=variety,
+            model_version="v1_jh",
+            model_type="arima",
+            mape=float("nan"),
+            training_rows=0,
+            pickle_path=str(pickle_path),
+        ))
+    return out
+
+
 def _default_retrain_all(trigger: str) -> list[RetrainResult]:
     out = []
     out.extend(_default_retrain_price(PRICE_COMMODITIES))
     out.extend(_default_retrain_mango(MANGO_VARIETIES))
+    # Jharkhand mango models — partial-swarm-tolerant. If Agent 4's training
+    # has not produced the pickles yet, this leg logs warnings and returns
+    # an empty list rather than crashing the retrain.
+    try:
+        out.extend(_default_retrain_mango_jh(JH_MANGO_VARIETIES))
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("JH mango retrain leg failed: %s", exc)
     return out
 
 
@@ -620,10 +694,13 @@ __all__ = [
     "RetrainResult",
     "BASELINE_MAPE", "WEEKLY_MIN_NEW_ROWS",
     "MAPE_DEGRADATION_MULTIPLIER", "HARVEST_TRIGGER_MIN_COUNT",
+    "PRICE_COMMODITIES", "MANGO_VARIETIES",
+    "JH_MANGO_VARIETIES", "JH_MANGO_MODEL_PICKLES",
     "log_cron_run", "register_model_version",
     "check_and_retrain_if_new_data",
     "check_rolling_mape",
     "retrain_on_harvest_actuals",
     "annual_full_retrain",
     "get_registry_snapshot",
+    "_default_retrain_mango_jh",
 ]

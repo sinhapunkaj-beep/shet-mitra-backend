@@ -45,10 +45,27 @@ public partial class BeltIntelligenceViewModel : ObservableObject
     [ObservableProperty] private DateOnly lastRefreshed;
     [ObservableProperty] private DateOnly nextRefresh;
 
+    // Region filter (Bagaan Sathi SDD §7) — the header dropdown above the
+    // tab control. Controls visibility downstream; currently just a UI
+    // selector while the data layer is wired.
+    public ObservableCollection<string> RegionFilterOptions { get; } = new()
+    {
+        "All",
+        "Maharashtra (ShetMitra)",
+        "Jharkhand (Bagaan Sathi)"
+    };
+
+    [ObservableProperty] private string selectedRegionFilter = "All";
+
     // Mango belt tabs (May 2026 — Mango Agent 8 §9.4).
     public MangoBeltTabViewModel KonkanTab { get; }
     public MangoBeltTabViewModel NashikTab { get; }
     public MangoBeltTabViewModel VidarbhaTab { get; }
+
+    // Jharkhand + Bihar belt (Bagaan Sathi SDD §7) — AMED harvest forecast
+    // for the eastern belt. Data layer wires real forecasts later; for now
+    // the tab renders deterministic stub rows.
+    public JharkhandBeltTabViewModel JharkhandTab { get; }
 
     public BeltIntelligenceViewModel() : this(App.Supabase, "Tasgaon") { }
 
@@ -62,6 +79,7 @@ public partial class BeltIntelligenceViewModel : ObservableObject
         KonkanTab = new MangoBeltTabViewModel(supabase, "Konkan", "Alphonso", "Konkan Belt — Alphonso");
         NashikTab = new MangoBeltTabViewModel(supabase, "Nashik", "Kesar", "Nashik Belt — Kesar");
         VidarbhaTab = new MangoBeltTabViewModel(supabase, "Vidarbha", "Dasheri", "Vidarbha Belt — Dasheri");
+        JharkhandTab = new JharkhandBeltTabViewModel();
 
         SeedDesignTime();
         _ = RefreshAsync();
@@ -379,3 +397,65 @@ public partial class MangoBeltTabViewModel : ObservableObject
         HealthXAxes = new[] { new Axis { Labels = labels, Name = "Week" } };
     }
 }
+
+/// <summary>
+/// Belt-intelligence tab payload for the Jharkhand + Bihar AMED region
+/// (Bagaan Sathi SDD §7). Renders deterministic stub data until the
+/// data layer wires the eastern-belt forecast endpoint.
+/// </summary>
+public partial class JharkhandBeltTabViewModel : ObservableObject
+{
+    [ObservableProperty] private string regionTitle = "Jharkhand + Bihar — AMED harvest forecast";
+    [ObservableProperty] private int totalFieldsDetected = 4120;
+    [ObservableProperty] private double totalAreaAcres = 9420;
+    [ObservableProperty] private double thisWeekVolumeMt = 296;
+    [ObservableProperty] private double nextWeekVolumeMt = 318;
+    [ObservableProperty] private string topCommodity = "Tomato";
+    [ObservableProperty] private string pricePressure = "MEDIUM";
+
+    [ObservableProperty] private ISeries[] forecastSeries = Array.Empty<ISeries>();
+    [ObservableProperty] private Axis[] forecastXAxes = Array.Empty<Axis>();
+    [ObservableProperty] private Axis[] forecastYAxes = Array.Empty<Axis>();
+
+    public ObservableCollection<JharkhandCommodityRow> CommodityRows { get; } = new();
+
+    public JharkhandBeltTabViewModel()
+    {
+        SeedDesignTime();
+    }
+
+    private void SeedDesignTime()
+    {
+        var weeks = new[] { "W22", "W23", "W24", "W25" };
+        var volumes = new double[] { 248, 296, 318, 305 };
+        ForecastSeries = new ISeries[]
+        {
+            new ColumnSeries<double>
+            {
+                Name = "Forecast MT",
+                Values = volumes,
+                Fill = new SolidColorPaint(SKColors.OrangeRed)
+            }
+        };
+        ForecastXAxes = new[] { new Axis { Labels = weeks, Name = "Week" } };
+        ForecastYAxes = new[] { new Axis { Name = "MT" } };
+
+        CommodityRows.Clear();
+        CommodityRows.Add(new JharkhandCommodityRow(
+            "Tomato", "Ranchi / Hazaribagh", 1820, 4180, 142, 22));
+        CommodityRows.Add(new JharkhandCommodityRow(
+            "Potato", "Patna / Nalanda", 1280, 3260, 96, 14));
+        CommodityRows.Add(new JharkhandCommodityRow(
+            "Brinjal", "Gaya / Jamui", 612, 1140, 38, 18));
+        CommodityRows.Add(new JharkhandCommodityRow(
+            "Cauliflower", "Begusarai", 408, 840, 20, 16));
+    }
+}
+
+public sealed record JharkhandCommodityRow(
+    string Commodity,
+    string Belt,
+    int FieldsDetected,
+    double TotalAreaAcres,
+    double ThisWeekVolumeMt,
+    double ModalPriceKg);

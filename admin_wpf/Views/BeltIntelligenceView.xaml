@@ -30,6 +30,18 @@
                     Background="{StaticResource BrandPrimary}"
                     Foreground="White"
                     BorderThickness="0" />
+            <ComboBox DockPanel.Dock="Right"
+                      ItemsSource="{Binding RegionFilterOptions}"
+                      SelectedItem="{Binding SelectedRegionFilter, Mode=TwoWay}"
+                      MinWidth="200"
+                      Margin="0,0,8,0"
+                      Padding="6,4"
+                      VerticalAlignment="Center" />
+            <TextBlock DockPanel.Dock="Right"
+                       Text="Region:"
+                       Foreground="{StaticResource TextMuted}"
+                       VerticalAlignment="Center"
+                       Margin="0,0,6,0" />
         </DockPanel>
 
         <TabControl Grid.Row="1" Background="Transparent" BorderThickness="0">
@@ -178,6 +190,91 @@
             </Border>
         </StackPanel>
         </ScrollViewer>
+        </TabItem>
+
+        <!-- JHARKHAND + BIHAR BELT — Bagaan Sathi SDD §7 -->
+        <TabItem Header="Jharkhand + Bihar" DataContext="{Binding JharkhandTab}">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="8">
+                <StackPanel>
+                    <UniformGrid Columns="4" Rows="1">
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="Total fields detected" Style="{StaticResource CardTitle}" />
+                                <TextBlock Text="{Binding TotalFieldsDetected}" Style="{StaticResource CardValue}" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="Total area (acres)" Style="{StaticResource CardTitle}" />
+                                <TextBlock Text="{Binding TotalAreaAcres, StringFormat={}{0:N0}}"
+                                           Style="{StaticResource CardValue}" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="This week (MT)" Style="{StaticResource CardTitle}" />
+                                <TextBlock Text="{Binding ThisWeekVolumeMt, StringFormat={}{0:0}}"
+                                           Style="{StaticResource CardValue}" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource Card}"
+                                Background="{Binding PricePressure, Converter={StaticResource PricePressureToBrushConverter}}">
+                            <StackPanel>
+                                <TextBlock Text="Price pressure"
+                                           Foreground="White"
+                                           FontWeight="SemiBold"
+                                           FontSize="13" />
+                                <TextBlock Text="{Binding PricePressure}"
+                                           Foreground="White"
+                                           FontSize="26"
+                                           FontWeight="Bold"
+                                           Margin="0,4,0,0" />
+                            </StackPanel>
+                        </Border>
+                    </UniformGrid>
+
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Text="AMED harvest forecast (Jharkhand + Bihar)"
+                                       FontSize="16"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,8" />
+                            <lvc:CartesianChart Height="260"
+                                                Series="{Binding ForecastSeries}"
+                                                XAxes="{Binding ForecastXAxes}"
+                                                YAxes="{Binding ForecastYAxes}" />
+                            <TextBlock Foreground="{StaticResource TextMuted}"
+                                       FontSize="11"
+                                       Margin="0,8,0,0"
+                                       Text="Stub data — data layer will replace once eastern-belt feed is live." />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Text="Commodity breakdown"
+                                       FontSize="16"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,8" />
+                            <DataGrid ItemsSource="{Binding CommodityRows}"
+                                      AutoGenerateColumns="False"
+                                      CanUserAddRows="False"
+                                      HeadersVisibility="Column"
+                                      IsReadOnly="True"
+                                      GridLinesVisibility="None">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Commodity"       Binding="{Binding Commodity}"                                  Width="*" />
+                                    <DataGridTextColumn Header="Belt"            Binding="{Binding Belt}"                                       Width="*" />
+                                    <DataGridTextColumn Header="Fields"          Binding="{Binding FieldsDetected}"                             Width="*" />
+                                    <DataGridTextColumn Header="Area (acres)"    Binding="{Binding TotalAreaAcres, StringFormat={}{0:N0}}"     Width="*" />
+                                    <DataGridTextColumn Header="This week (MT)"  Binding="{Binding ThisWeekVolumeMt, StringFormat={}{0:0}}"    Width="*" />
+                                    <DataGridTextColumn Header="Modal ₹/kg"      Binding="{Binding ModalPriceKg, StringFormat={}{0:N0}}"       Width="*" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
         </TabItem>
 
         <!-- KONKAN BELT (ALPHONSO) — Mango Agent 8 §9.4 -->

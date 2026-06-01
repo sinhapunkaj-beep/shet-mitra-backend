@@ -1,0 +1,365 @@
+<UserControl x:Class="ShetMitraAdmin.Views.MarketplaceView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:ShetMitraAdmin.ViewModels"
+             d:DataContext="{d:DesignInstance Type=vm:MarketplaceViewModel, IsDesignTimeCreatable=True}"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             Background="{StaticResource SurfaceBg}">
+    <UserControl.DataContext>
+        <vm:MarketplaceViewModel />
+    </UserControl.DataContext>
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- HEADER -->
+        <DockPanel Grid.Row="0" LastChildFill="False" Margin="8,8,8,12">
+            <TextBlock DockPanel.Dock="Left"
+                       Text="Marketplace (Bagaan Sathi)"
+                       FontSize="26"
+                       FontWeight="Bold" />
+            <Button DockPanel.Dock="Right"
+                    Content="Refresh"
+                    Command="{Binding RefreshCommand}"
+                    Padding="14,6"
+                    Background="{StaticResource BrandPrimary}"
+                    Foreground="White"
+                    BorderThickness="0"
+                    Margin="8,0,0,0" />
+            <Button DockPanel.Dock="Right"
+                    Content="Run Matching"
+                    Command="{Binding RunMatchingCommand}"
+                    Padding="14,6"
+                    Background="{StaticResource BrandAccent}"
+                    Foreground="Black"
+                    FontWeight="SemiBold"
+                    BorderThickness="0" />
+        </DockPanel>
+
+        <!-- TABS -->
+        <TabControl Grid.Row="1" Background="Transparent" BorderThickness="0">
+
+            <!-- TAB 1: ACTIVE LOTS -->
+            <TabItem Header="Active Lots">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <Border Grid.Row="0" Style="{StaticResource Card}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                                <TextBlock Text="Region" Style="{StaticResource CardTitle}" />
+                                <ComboBox ItemsSource="{Binding RegionOptions}"
+                                          SelectedItem="{Binding LotsRegion, Mode=TwoWay}"
+                                          Margin="0,4,0,0" Padding="6,4" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Margin="0,0,12,0">
+                                <TextBlock Text="Commodity" Style="{StaticResource CardTitle}" />
+                                <ComboBox ItemsSource="{Binding CommodityOptions}"
+                                          SelectedItem="{Binding LotsCommodity, Mode=TwoWay}"
+                                          Margin="0,4,0,0" Padding="6,4" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2" Margin="0,0,12,0">
+                                <TextBlock Text="Grade" Style="{StaticResource CardTitle}" />
+                                <ComboBox ItemsSource="{Binding GradeOptions}"
+                                          SelectedItem="{Binding LotsGrade, Mode=TwoWay}"
+                                          Margin="0,4,0,0" Padding="6,4" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="3">
+                                <TextBlock Text="Status" Style="{StaticResource CardTitle}" />
+                                <ComboBox ItemsSource="{Binding StatusOptions}"
+                                          SelectedItem="{Binding LotsStatus, Mode=TwoWay}"
+                                          Margin="0,4,0,0" Padding="6,4" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <Border Grid.Row="1" Style="{StaticResource Card}">
+                        <DataGrid ItemsSource="{Binding ActiveLots}"
+                                  SelectedItem="{Binding SelectedLot, Mode=TwoWay}"
+                                  AutoGenerateColumns="False"
+                                  CanUserAddRows="False"
+                                  HeadersVisibility="Column"
+                                  IsReadOnly="True"
+                                  GridLinesVisibility="Horizontal">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Farmer"    Binding="{Binding FarmerName}"         Width="*" />
+                                <DataGridTextColumn Header="Region"    Binding="{Binding Region}"             Width="0.6*" />
+                                <DataGridTextColumn Header="Commodity" Binding="{Binding DisplayCommodity}"   Width="1.4*" />
+                                <DataGridTextColumn Header="Grade"     Binding="{Binding Grade}"              Width="0.6*" />
+                                <DataGridTextColumn Header="Qty"       Binding="{Binding DisplayQuantity}"    Width="*" />
+                                <DataGridTextColumn Header="Ask"       Binding="{Binding DisplayAsk}"         Width="*" />
+                                <DataGridTextColumn Header="Status"    Binding="{Binding Status}"             Width="*" />
+                                <DataGridTextColumn Header="Listed"    Binding="{Binding ListedAt, StringFormat={}{0:yyyy-MM-dd HH:mm}}" Width="*" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Border>
+                </Grid>
+            </TabItem>
+
+            <!-- TAB 2: ACTIVE REQUIREMENTS -->
+            <TabItem Header="Active Requirements">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <Border Grid.Row="0" Style="{StaticResource Card}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                                <TextBlock Text="Region" Style="{StaticResource CardTitle}" />
+                                <ComboBox ItemsSource="{Binding RegionOptions}"
+                                          SelectedItem="{Binding RequirementsRegion, Mode=TwoWay}"
+                                          Margin="0,4,0,0" Padding="6,4" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Margin="0,0,12,0">
+                                <TextBlock Text="Commodity" Style="{StaticResource CardTitle}" />
+                                <ComboBox ItemsSource="{Binding CommodityOptions}"
+                                          SelectedItem="{Binding RequirementsCommodity, Mode=TwoWay}"
+                                          Margin="0,4,0,0" Padding="6,4" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2" Margin="0,0,12,0">
+                                <TextBlock Text="Grade" Style="{StaticResource CardTitle}" />
+                                <ComboBox ItemsSource="{Binding GradeOptions}"
+                                          SelectedItem="{Binding RequirementsGrade, Mode=TwoWay}"
+                                          Margin="0,4,0,0" Padding="6,4" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="3">
+                                <TextBlock Text="Status" Style="{StaticResource CardTitle}" />
+                                <ComboBox ItemsSource="{Binding StatusOptions}"
+                                          SelectedItem="{Binding RequirementsStatus, Mode=TwoWay}"
+                                          Margin="0,4,0,0" Padding="6,4" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <Border Grid.Row="1" Style="{StaticResource Card}">
+                        <DataGrid ItemsSource="{Binding ActiveRequirements}"
+                                  AutoGenerateColumns="False"
+                                  CanUserAddRows="False"
+                                  HeadersVisibility="Column"
+                                  IsReadOnly="True"
+                                  GridLinesVisibility="Horizontal">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Trader"      Binding="{Binding TraderName}"         Width="*" />
+                                <DataGridTextColumn Header="Region"      Binding="{Binding Region}"             Width="0.6*" />
+                                <DataGridTextColumn Header="Commodity"   Binding="{Binding DisplayCommodity}"   Width="1.4*" />
+                                <DataGridTextColumn Header="Grade"       Binding="{Binding Grade}"              Width="0.6*" />
+                                <DataGridTextColumn Header="Required"    Binding="{Binding DisplayQuantity}"    Width="*" />
+                                <DataGridTextColumn Header="Max price"   Binding="{Binding DisplayMaxPrice}"    Width="*" />
+                                <DataGridTextColumn Header="Window"      Binding="{Binding DeliveryWindow}"     Width="*" />
+                                <DataGridTextColumn Header="Status"      Binding="{Binding Status}"             Width="*" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Border>
+                </Grid>
+            </TabItem>
+
+            <!-- TAB 3: MATCHES -->
+            <TabItem Header="Matches">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <Border Grid.Row="0" Style="{StaticResource Card}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Foreground="{StaticResource TextMuted}"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,12,0"
+                                       Text="Showing matches for selected lot:" />
+                            <TextBlock Text="{Binding SelectedLot.FarmerName, FallbackValue='(none selected)'}"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center" />
+                            <TextBlock Text=" — " Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding SelectedLot.DisplayCommodity, FallbackValue=''}"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Row="1" Style="{StaticResource Card}">
+                        <DataGrid ItemsSource="{Binding Matches}"
+                                  AutoGenerateColumns="False"
+                                  CanUserAddRows="False"
+                                  HeadersVisibility="Column"
+                                  IsReadOnly="True"
+                                  GridLinesVisibility="Horizontal">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Farmer"    Binding="{Binding FarmerName}"         Width="*" />
+                                <DataGridTextColumn Header="Trader"    Binding="{Binding TraderName}"         Width="*" />
+                                <DataGridTextColumn Header="Commodity" Binding="{Binding Commodity}"          Width="*" />
+                                <DataGridTextColumn Header="Qty (kg)"  Binding="{Binding MatchedQuantityKg, StringFormat={}{0:N0}}" Width="*" />
+                                <DataGridTextColumn Header="Price"     Binding="{Binding DisplayPrice}"       Width="*" />
+                                <DataGridTextColumn Header="Score"     Binding="{Binding DisplayMatchScore}"  Width="*" />
+                                <DataGridTextColumn Header="Status"    Binding="{Binding Status}"             Width="*" />
+                                <DataGridTextColumn Header="Matched"   Binding="{Binding MatchedAt, StringFormat={}{0:yyyy-MM-dd HH:mm}}" Width="*" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Border>
+                </Grid>
+            </TabItem>
+
+            <!-- TAB 4: TRADES COMPLETED -->
+            <TabItem Header="Trades Completed">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <Border Grid.Row="0" Style="{StaticResource Card}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                                <TextBlock Text="Region" Style="{StaticResource CardTitle}" />
+                                <ComboBox ItemsSource="{Binding RegionOptions}"
+                                          SelectedItem="{Binding TradesRegion, Mode=TwoWay}"
+                                          Margin="0,4,0,0" Padding="6,4" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Margin="0,0,12,0">
+                                <TextBlock Text="Commodity" Style="{StaticResource CardTitle}" />
+                                <ComboBox ItemsSource="{Binding CommodityOptions}"
+                                          SelectedItem="{Binding TradesCommodity, Mode=TwoWay}"
+                                          Margin="0,4,0,0" Padding="6,4" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2" Margin="0,0,12,0">
+                                <TextBlock Text="Grade" Style="{StaticResource CardTitle}" />
+                                <ComboBox ItemsSource="{Binding GradeOptions}"
+                                          SelectedItem="{Binding TradesGrade, Mode=TwoWay}"
+                                          Margin="0,4,0,0" Padding="6,4" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="3">
+                                <TextBlock Text="Week" Style="{StaticResource CardTitle}" />
+                                <ComboBox ItemsSource="{Binding WeekOptions}"
+                                          SelectedItem="{Binding TradesWeek, Mode=TwoWay}"
+                                          Margin="0,4,0,0" Padding="6,4" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <Border Grid.Row="1" Style="{StaticResource Card}">
+                        <DataGrid ItemsSource="{Binding TradesCompleted}"
+                                  AutoGenerateColumns="False"
+                                  CanUserAddRows="False"
+                                  HeadersVisibility="Column"
+                                  IsReadOnly="True"
+                                  GridLinesVisibility="Horizontal">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Farmer"        Binding="{Binding FarmerName}"           Width="*" />
+                                <DataGridTextColumn Header="Trader"        Binding="{Binding TraderName}"           Width="*" />
+                                <DataGridTextColumn Header="Region"        Binding="{Binding Region}"               Width="0.6*" />
+                                <DataGridTextColumn Header="Commodity"     Binding="{Binding Commodity}"            Width="*" />
+                                <DataGridTextColumn Header="Grade"         Binding="{Binding Grade}"                Width="0.6*" />
+                                <DataGridTextColumn Header="Qty (kg)"      Binding="{Binding TradedQuantityKg, StringFormat={}{0:N0}}" Width="*" />
+                                <DataGridTextColumn Header="Settled ₹/kg"  Binding="{Binding SettledPriceKg, StringFormat={}{0:N0}}"   Width="*" />
+                                <DataGridTextColumn Header="Premium"       Binding="{Binding DisplayPremium}"       Width="*" />
+                                <DataGridTextColumn Header="Fee ₹"         Binding="{Binding PlatformFeeInr, StringFormat={}{0:N0}}"   Width="*" />
+                                <DataGridTextColumn Header="Settled"       Binding="{Binding SettledAt, StringFormat={}{0:yyyy-MM-dd}}" Width="*" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Border>
+                </Grid>
+            </TabItem>
+
+            <!-- TAB 5: AGGREGATIONS -->
+            <TabItem Header="Aggregations">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <Border Grid.Row="0" Style="{StaticResource Card}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                                <TextBlock Text="Region" Style="{StaticResource CardTitle}" />
+                                <ComboBox ItemsSource="{Binding RegionOptions}"
+                                          SelectedItem="{Binding AggregationsRegion, Mode=TwoWay}"
+                                          Margin="0,4,0,0" Padding="6,4" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Margin="0,0,12,0">
+                                <TextBlock Text="Commodity" Style="{StaticResource CardTitle}" />
+                                <ComboBox ItemsSource="{Binding CommodityOptions}"
+                                          SelectedItem="{Binding AggregationsCommodity, Mode=TwoWay}"
+                                          Margin="0,4,0,0" Padding="6,4" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2" Margin="0,0,12,0">
+                                <TextBlock Text="Grade" Style="{StaticResource CardTitle}" />
+                                <ComboBox ItemsSource="{Binding GradeOptions}"
+                                          SelectedItem="{Binding AggregationsGrade, Mode=TwoWay}"
+                                          Margin="0,4,0,0" Padding="6,4" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="3">
+                                <TextBlock Text="Week" Style="{StaticResource CardTitle}" />
+                                <ComboBox ItemsSource="{Binding WeekOptions}"
+                                          SelectedItem="{Binding AggregationsWeek, Mode=TwoWay}"
+                                          Margin="0,4,0,0" Padding="6,4" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <Border Grid.Row="1" Style="{StaticResource Card}">
+                        <DataGrid ItemsSource="{Binding Aggregations}"
+                                  AutoGenerateColumns="False"
+                                  CanUserAddRows="False"
+                                  HeadersVisibility="Column"
+                                  IsReadOnly="True"
+                                  GridLinesVisibility="Horizontal">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Region"      Binding="{Binding Region}"             Width="0.6*" />
+                                <DataGridTextColumn Header="Commodity"   Binding="{Binding DisplayCommodity}"   Width="1.4*" />
+                                <DataGridTextColumn Header="Grade"       Binding="{Binding Grade}"              Width="0.6*" />
+                                <DataGridTextColumn Header="Week"        Binding="{Binding WeekLabel}"          Width="0.6*" />
+                                <DataGridTextColumn Header="Farmers"     Binding="{Binding FarmerCount}"        Width="*" />
+                                <DataGridTextColumn Header="Total qty"   Binding="{Binding DisplayQuantity}"    Width="*" />
+                                <DataGridTextColumn Header="Avg ask"     Binding="{Binding DisplayAvgAsk}"      Width="*" />
+                                <DataGridTextColumn Header="Status"      Binding="{Binding Status}"             Width="*" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Border>
+                </Grid>
+            </TabItem>
+
+        </TabControl>
+
+        <!-- STATUS BAR -->
+        <Border Grid.Row="2" Style="{StaticResource Card}" Margin="8,12,8,0">
+            <TextBlock Text="{Binding StatusMessage}"
+                       Foreground="{StaticResource TextMuted}"
+                       FontSize="12" />
+        </Border>
+    </Grid>
+</UserControl>

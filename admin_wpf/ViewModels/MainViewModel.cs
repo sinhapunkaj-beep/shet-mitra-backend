@@ -29,8 +29,10 @@ public partial class MainViewModel : ObservableObject
             2 => new AlertsView(),
             3 => new AnalyticsPlaceholderView(),
             4 => new PriceAnalysisView(),
-            5 => new BeltIntelligenceView(),
-            6 => new DroneOperationsPlaceholderView(),
+            5 => new TraderIntelligenceView(),
+            6 => new MarketplaceView(),
+            7 => new BeltIntelligenceView(),
+            8 => new DroneOperationsPlaceholderView(),
             _ => new DashboardView()
         };
     }

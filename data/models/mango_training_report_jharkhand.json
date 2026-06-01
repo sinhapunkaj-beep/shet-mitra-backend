@@ -1,0 +1,44 @@
+{
+  "trained_at": "2026-06-01T14:02:34.220455+00:00",
+  "data_source": "upstream_csv_jharkhand",
+  "random_state": 42,
+  "region": "JH",
+  "varieties": {
+    "Mallika": {
+      "variety": "Mallika",
+      "model_kind": "arimax_common",
+      "mape": 6.080273243776691,
+      "target_mape": 18.0,
+      "target_hit": true,
+      "fallback_used": false,
+      "train_rows": 632,
+      "test_rows": 208,
+      "rationale": "Jharkhand belt: arimax_common MAPE=6.08% (target <18.0%, hit=YES).",
+      "pickle_path": "C:\\Users\\Pankaj Sinha\\Desktop\\Projects\\Project Shet Mitra\\shet-mitra\\data\\models\\arima_mango_mallika_jharkhand.pkl"
+    },
+    "Jardalu": {
+      "variety": "Jardalu",
+      "model_kind": "arimax_common",
+      "mape": 19.61877553856341,
+      "target_mape": 20.0,
+      "target_hit": true,
+      "fallback_used": false,
+      "train_rows": 395,
+      "test_rows": 130,
+      "rationale": "Jharkhand belt: arimax_common MAPE=19.62% (target <20.0%, hit=YES).",
+      "pickle_path": "C:\\Users\\Pankaj Sinha\\Desktop\\Projects\\Project Shet Mitra\\shet-mitra\\data\\models\\arima_mango_jardalu_jharkhand.pkl"
+    },
+    "Amrapali": {
+      "variety": "Amrapali",
+      "model_kind": "arimax_common",
+      "mape": 4.662892053276646,
+      "target_mape": 16.0,
+      "target_hit": true,
+      "fallback_used": false,
+      "train_rows": 468,
+      "test_rows": 162,
+      "rationale": "Jharkhand belt: arimax_common MAPE=4.66% (target <16.0%, hit=YES).",
+      "pickle_path": "C:\\Users\\Pankaj Sinha\\Desktop\\Projects\\Project Shet Mitra\\shet-mitra\\data\\models\\arima_mango_amrapali_jharkhand.pkl"
+    }
+  }
+}

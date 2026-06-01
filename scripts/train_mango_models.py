@@ -38,6 +38,7 @@ synthetic dataset is generated so the script still produces pickles.
 
 from __future__ import annotations
 
+import argparse
 import json
 import logging
 import os
@@ -69,6 +70,18 @@ MODELS_DIR.mkdir(parents=True, exist_ok=True)
 PRICE_CSV = DATA_DIR / "price_history_mango_synthetic.csv"
 FOREX_CSV = DATA_DIR / "forex_rates_synthetic.csv"
 REPORT_PATH = MODELS_DIR / "mango_training_report.json"
+
+# Jharkhand belt (SDD §3.4)
+PRICE_CSV_JHARKHAND = DATA_DIR / "price_history_jharkhand_mango.csv"
+REPORT_PATH_JHARKHAND = MODELS_DIR / "mango_training_report_jharkhand.json"
+
+JHARKHAND_VARIETIES = ("Mallika", "Jardalu", "Amrapali")
+
+TARGET_MAPE_JHARKHAND = {
+    "Mallika": 18.0,
+    "Jardalu": 20.0,     # lumpy GI premium
+    "Amrapali": 16.0,
+}
 
 # --------------------------------------------------------------------------- #
 # Logging
@@ -330,6 +343,202 @@ def load_dataset() -> tuple[pd.DataFrame, pd.DataFrame, str]:
         price["arrivals_qty"] = np.nan
 
     return price, forex, source
+
+
+# --------------------------------------------------------------------------- #
+# Jharkhand belt dataset loader (SDD §3.4)
+# --------------------------------------------------------------------------- #
+def load_jharkhand_dataset() -> tuple[pd.DataFrame, pd.DataFrame, str]:
+    """Load the Jharkhand-belt mango CSV produced by Mango Agent 2.
+
+    If the upstream CSV is missing, build it inline by delegating to the
+    importer's synthetic generator so the trainer always has data.
+    """
+    if PRICE_CSV_JHARKHAND.exists():
+        price = pd.read_csv(PRICE_CSV_JHARKHAND)
+        source = "upstream_csv_jharkhand"
+        logger.info(
+            "Loaded Jharkhand mango CSV: %s rows=%d",
+            PRICE_CSV_JHARKHAND, len(price),
+        )
+    else:
+        logger.warning(
+            "Jharkhand mango CSV missing (%s) - building inline synthetic dataset.",
+            PRICE_CSV_JHARKHAND,
+        )
+        # Import lazily to avoid circular import cost at module-load time.
+        from scripts.import_mango_market_data import (
+            build_jharkhand_synthetic_dataframe,
+        )
+        price = build_jharkhand_synthetic_dataframe(2015, 2026, seed=RANDOM_STATE)
+        source = "inline_synthetic_jharkhand"
+
+    # Forex frame - reuse Maharashtra path's helper if the file already exists,
+    # else build inline. (Jharkhand training doesn't actually use forex but
+    # `engineer_features` expects a frame with a date column.)
+    if FOREX_CSV.exists():
+        forex = pd.read_csv(FOREX_CSV)
+    else:
+        weeks = pd.date_range("2015-01-04", "2026-12-27", freq="W-SUN")
+        forex = _build_inline_forex(weeks)
+
+    # Date column normalisation.
+    for df in (price, forex):
+        date_col = None
+        for cand in ("date", "rate_date", "week_start", "arrival_date"):
+            if cand in df.columns:
+                date_col = cand
+                break
+        if date_col is None:
+            raise ValueError(
+                "Jharkhand price/forex frame missing a recognisable date column"
+            )
+        df["date"] = pd.to_datetime(df[date_col], errors="coerce")
+
+    if "variety" not in price.columns:
+        raise ValueError(
+            "price_history_jharkhand_mango.csv must contain a 'variety' column"
+        )
+
+    # Rename arrivals to the trainer's canonical name.
+    rename_map = {
+        "arrivals_mt": "arrivals_qty",
+        "arrivals_tonnes": "arrivals_qty",
+        "modal_price_per_kg": "price_modal_kg",
+        "modal_price_kg": "price_modal_kg",
+    }
+    price = price.rename(
+        columns={k: v for k, v in rename_map.items() if k in price.columns}
+    )
+
+    if "arrivals_qty" not in price.columns:
+        price["arrivals_qty"] = np.nan
+    if "mandi_name" not in price.columns:
+        price["mandi_name"] = "Unknown APMC"
+    # Importer emits bearing_year_flag (0/1/-1) directly; map back to ON/OFF
+    # so `engineer_features` can use its existing _bearing_to_flag mapping.
+    if "bearing_year" not in price.columns:
+        if "bearing_year_flag" in price.columns:
+            def _flag_to_bearing(v):
+                try:
+                    iv = int(v)
+                except (TypeError, ValueError):
+                    return "UNKNOWN"
+                if iv == 1:
+                    return "ON"
+                if iv == 0:
+                    return "OFF"
+                return "UNKNOWN"
+            price["bearing_year"] = price["bearing_year_flag"].map(_flag_to_bearing)
+        else:
+            price["bearing_year"] = "UNKNOWN"
+    if "flowering_weather_score" not in price.columns:
+        price["flowering_weather_score"] = 70.0
+
+    return price, forex, source
+
+
+def train_jharkhand_variety(
+    price_df: pd.DataFrame, forex_df: pd.DataFrame, variety: str
+) -> dict:
+    """Train one Jharkhand variety. Writes ``arima_mango_<slug>_jharkhand.pkl``.
+
+    Strategy:
+      * Try log-ARIMAX(1,1,1) with COMMON_FEATURES.
+      * If it fails to converge or yields a non-finite forecast, fall back
+        to the log-naive forecaster (SDD §3.4: "if any model fails to
+        converge ... fall back to log-naive and report MAPE for that").
+    """
+    df_v = price_df[price_df["variety"] == variety].copy()
+    if df_v.empty:
+        raise RuntimeError(f"No rows for variety={variety} (Jharkhand belt)")
+
+    df_v = engineer_features(df_v, forex_df, variety)
+
+    train_mask = (df_v["date"] >= "2015-01-01") & (df_v["date"] <= "2023-12-31")
+    test_mask = (df_v["date"] >= "2024-01-01") & (df_v["date"] <= "2026-12-31")
+    train = (
+        df_v[train_mask]
+        .dropna(subset=["price_modal_kg"] + COMMON_FEATURES)
+        .reset_index(drop=True)
+    )
+    test = (
+        df_v[test_mask]
+        .dropna(subset=["price_modal_kg"] + COMMON_FEATURES)
+        .reset_index(drop=True)
+    )
+    if len(train) == 0 or len(test) == 0:
+        cut = max(1, int(len(df_v) * 0.8))
+        train = df_v.iloc[:cut].dropna(subset=["price_modal_kg"]).reset_index(drop=True)
+        test = df_v.iloc[cut:].dropna(subset=["price_modal_kg"]).reset_index(drop=True)
+
+    logger.info(
+        "[JH/%s] train_rows=%d test_rows=%d",
+        variety, len(train), len(test),
+    )
+
+    mean_price = float(train["price_modal_kg"].mean()) if len(train) else 0.0
+
+    fitted, pred, residual_std, fallback = _fit_log_arimax(
+        train, test, COMMON_FEATURES, label=f"JH_{variety}"
+    )
+    mape = _mape(test["price_modal_kg"].values, pred)
+    model_kind = "log_naive" if fallback else "arimax_common"
+
+    target = TARGET_MAPE_JHARKHAND[variety]
+    target_hit = bool(mape < target)
+    rationale = (
+        f"Jharkhand belt: {model_kind} MAPE={mape:.2f}% "
+        f"(target <{target:.1f}%, hit={'YES' if target_hit else 'NO'})."
+    )
+    if fallback:
+        rationale += " ARIMAX failed to converge - log-naive fallback used."
+
+    iso_now = datetime.now(timezone.utc).isoformat()
+    slug = variety.lower()
+    pickle_path = MODELS_DIR / f"arima_mango_{slug}_jharkhand.pkl"
+
+    last_train_log_price = float(
+        np.log(max(1e-3, train["price_modal_kg"].iloc[-1]))
+    ) if len(train) else 0.0
+
+    payload = {
+        "model": None if fallback else fitted,
+        "features": list(COMMON_FEATURES),
+        "mape": mape,
+        "variety": variety,
+        "commodity": "Mango",
+        "version": "v2-jharkhand",
+        "model_kind": model_kind,
+        "region": "JH",
+        "trained_at": iso_now,
+        "train_rows": len(train),
+        "test_rows": len(test),
+        "residual_std": residual_std,
+        "mean_price": mean_price,
+        "last_train_log_price": last_train_log_price,
+        "feature_medians": {
+            f: float(train[f].median()) if f in train.columns and len(train) else 0.0
+            for f in COMMON_FEATURES
+        },
+        "selection_rationale": rationale,
+        "target_mape": target,
+        "target_hit": target_hit,
+    }
+    joblib.dump(payload, pickle_path)
+
+    return {
+        "variety": variety,
+        "model_kind": model_kind,
+        "mape": mape,
+        "target_mape": target,
+        "target_hit": target_hit,
+        "fallback_used": fallback,
+        "train_rows": len(train),
+        "test_rows": len(test),
+        "rationale": rationale,
+        "pickle_path": str(pickle_path),
+    }
 
 
 # --------------------------------------------------------------------------- #
@@ -712,7 +921,7 @@ def train_variety(
 # --------------------------------------------------------------------------- #
 # Main entry
 # --------------------------------------------------------------------------- #
-def main() -> int:
+def _run_maharashtra() -> int:
     price_df, forex_df, source = load_dataset()
     logger.info(
         "Dataset source=%s price_rows=%d forex_rows=%d",
@@ -771,6 +980,81 @@ def main() -> int:
         )
     print("=" * 88)
     return 0
+
+
+def _run_jharkhand() -> int:
+    price_df, forex_df, source = load_jharkhand_dataset()
+    logger.info(
+        "Jharkhand belt dataset source=%s price_rows=%d forex_rows=%d",
+        source,
+        len(price_df),
+        len(forex_df),
+    )
+
+    full_report: dict = {
+        "trained_at": datetime.now(timezone.utc).isoformat(),
+        "data_source": source,
+        "random_state": RANDOM_STATE,
+        "region": "JH",
+        "varieties": {},
+    }
+    summary_rows = []
+
+    for variety in JHARKHAND_VARIETIES:
+        try:
+            result = train_jharkhand_variety(price_df, forex_df, variety)
+        except Exception as exc:  # noqa: BLE001
+            logger.exception("Jharkhand training failed for %s: %s", variety, exc)
+            full_report["varieties"][variety] = {"error": str(exc)}
+            continue
+        full_report["varieties"][variety] = result
+        summary_rows.append(result)
+
+    with REPORT_PATH_JHARKHAND.open("w") as fh:
+        json.dump(full_report, fh, indent=2, default=str)
+    logger.info("Wrote Jharkhand training report: %s", REPORT_PATH_JHARKHAND)
+
+    print()
+    print("=" * 88)
+    print("MANGO PRICE MODEL TRAINING SUMMARY - JHARKHAND BELT")
+    print("=" * 88)
+    header = (
+        f"{'variety':<14} {'model_kind':>16} {'MAPE':>8} {'target':>8} {'hit':>5}"
+    )
+    print(header)
+    print("-" * len(header))
+    for row in summary_rows:
+        print(
+            f"{row['variety']:<14} "
+            f"{row['model_kind']:>16} "
+            f"{row['mape']:>8.2f} "
+            f"{row['target_mape']:>8.1f} "
+            f"{'YES' if row['target_hit'] else 'NO':>5}"
+        )
+    print("=" * 88)
+    return 0
+
+
+def main(argv: Optional[list] = None) -> int:
+    parser = argparse.ArgumentParser(
+        description=(
+            "Train mango price models. Default: Maharashtra 5-variety stack "
+            "(SDD §5). With --jharkhand: 3-variety eastern belt stack (SDD §3.4)."
+        ),
+    )
+    parser.add_argument(
+        "--jharkhand",
+        action="store_true",
+        help=(
+            "Train the Jharkhand belt models: "
+            "arima_mango_{mallika,jardalu,amrapali}_jharkhand.pkl"
+        ),
+    )
+    args = parser.parse_args(list(argv) if argv is not None else None)
+
+    if args.jharkhand:
+        return _run_jharkhand()
+    return _run_maharashtra()
 
 
 if __name__ == "__main__":

@@ -37,6 +37,38 @@ _DEFAULT_DB = _REPO_ROOT / "data" / "test.db"
 
 
 # --------------------------------------------------------------------------- #
+# Mandi watchlists (SDD §5.2 + JH/Bihar/Bengal/Delhi extension)
+# --------------------------------------------------------------------------- #
+#: Maharashtra mango mandis the flash detector watches by default.
+MH_MANGO_MANDIS: tuple[str, ...] = (
+    "Vashi APMC",
+    "Ratnagiri APMC",
+    "Pune APMC",
+    "Mumbai Vashi",
+)
+
+#: Jharkhand / Bihar / West Bengal / Delhi mango mandis added for
+#: Bagaan Sathi farmers and traders. Detection rule mirrors the existing
+#: Maharashtra logic — only the mandi list grows.
+JH_MANGO_MANDIS: tuple[str, ...] = (
+    "Bhagalpur APMC",
+    "Ranchi APMC",
+    "Deoghar APMC",
+    "Dumka Mandi",
+    "Godda Mandi",
+    "Sahebganj Mandi",
+    "Patna APMC",
+    "Munger Mandi",
+    "Malda APMC",
+    "Murshidabad Mandi",
+    "Delhi Azadpur APMC",
+)
+
+#: Union of MH + JH mandi watchlists used when commodity == "Mango".
+MANGO_MANDI_WATCHLIST: tuple[str, ...] = MH_MANGO_MANDIS + JH_MANGO_MANDIS
+
+
+# --------------------------------------------------------------------------- #
 # Schema helper
 # --------------------------------------------------------------------------- #
 def _ensure_table(conn: sqlite3.Connection) -> None:
@@ -245,6 +277,18 @@ def _trigger_weather_change(commodity: str, weather: dict) -> Optional[dict]:
 # --------------------------------------------------------------------------- #
 # Orchestration (detection only - no persistence here)
 # --------------------------------------------------------------------------- #
+def mandi_watchlist_for(commodity: str) -> tuple[str, ...]:
+    """Return the mandi watchlist for a commodity.
+
+    Mango fans out across the union of MH + JH mandi lists; every other
+    commodity returns an empty tuple, which means the existing
+    commodity-level provider call (without mandi context) is used.
+    """
+    if (commodity or "").strip().lower() == "mango":
+        return MANGO_MANDI_WATCHLIST
+    return ()
+
+
 def check_flash_triggers(
     commodities: Iterable[str] = ("Dry Grapes", "Pomegranate", "Mango"),
     *,
@@ -255,6 +299,13 @@ def check_flash_triggers(
     weather_provider: Optional[Callable[[str], dict]] = None,
 ) -> list[dict]:
     """Check all flash trigger conditions for every commodity in ``commodities``.
+
+    For Mango we additionally fan out across :data:`MANGO_MANDI_WATCHLIST`
+    so a Jharkhand price spike at e.g. Bhagalpur triggers an alert even
+    when the all-India aggregate is quiet. Each provider receives the
+    bare commodity name; if a caller wants per-mandi pricing they should
+    inject a provider that inspects ``commodity`` and returns the right
+    payload.
 
     Returns the list of triggered alert dicts. Does NOT persist them and
     does NOT enforce the weekly cap - callers do that explicitly with
@@ -284,6 +335,33 @@ def check_flash_triggers(
             alert = fn(commodity, payload)
             if alert is not None:
                 triggered.append(alert)
+
+        # Mango-only fan-out across the JH/MH mandi watchlist. Each mandi
+        # is hit with the provider trio so a single-mandi spike is caught
+        # even when the all-India aggregate is muted. The orchestrator
+        # tolerates provider raises by skipping that mandi.
+        for mandi in mandi_watchlist_for(commodity):
+            try:
+                m_prices = pp(mandi)
+                m_arrivals = ap(mandi)
+                m_weather = wp(mandi)
+            except Exception as exc:  # noqa: BLE001
+                logger.warning(
+                    "provider error for mandi %s under %s: %s",
+                    mandi, commodity, exc,
+                )
+                continue
+            for fn, payload in (
+                (_trigger_price_drop, m_prices),
+                (_trigger_arrival_shortage, m_arrivals),
+                (_trigger_arrival_surplus, m_arrivals),
+                (_trigger_weather_change, m_weather),
+            ):
+                alert = fn(commodity, payload)
+                if alert is not None:
+                    alert = dict(alert)
+                    alert["mandi"] = mandi
+                    triggered.append(alert)
 
     return triggered
 
@@ -401,4 +479,8 @@ __all__ = [
     "count_flash_alerts_this_week",
     "persist_flash_alerts",
     "enforce_weekly_limit",
+    "mandi_watchlist_for",
+    "MH_MANGO_MANDIS",
+    "JH_MANGO_MANDIS",
+    "MANGO_MANDI_WATCHLIST",
 ]

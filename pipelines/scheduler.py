@@ -59,6 +59,19 @@ JOB_DEFINITIONS: list[dict[str, Any]] = [
         "description": "Annual pre-season forecast - first Monday of September",
     },
     {
+        "id": "PRE_SEASON_JH",
+        "func": "pipelines.scheduler:_job_pre_season_jh",
+        "trigger": "cron",
+        "trigger_kwargs": {
+            "month": 2, "day": "1-7", "day_of_week": "mon",
+            "hour": 5, "minute": 0,
+        },
+        "description": (
+            "Jharkhand pre-season forecast - first Monday of February "
+            "(JH mango harvest starts April-May)."
+        ),
+    },
+    {
         "id": "KEEPALIVE_PING",
         "func": "pipelines.scheduler:_job_keepalive_ping",
         "trigger": "cron",
@@ -102,6 +115,58 @@ JOB_DEFINITIONS: list[dict[str, Any]] = [
     # Trigger 3 (harvest actuals) is intentionally NOT scheduled - it is
     # invoked from api/webhooks_harvest.py on each completed collection,
     # and itself dedupes via cron_run_log (one fire per UTC day).
+
+    # ----- Bagaan Sathi marketplace jobs (SDD §9) ----------------------- #
+    {
+        "id": "DAILY_MATCHING",
+        "func": "pipelines.scheduler:_job_daily_matching",
+        "trigger": "cron",
+        "trigger_kwargs": {"hour": 16, "minute": 0},
+        "description": (
+            "Daily 16:00 IST — match active trader requirements with "
+            "available farmer lots and notify farmers."
+        ),
+    },
+    {
+        "id": "PLANT_PRIORITY_QUEUE",
+        "func": "pipelines.scheduler:_job_plant_priority_queue",
+        "trigger": "cron",
+        "trigger_kwargs": {"hour": 17, "minute": 0},
+        "description": (
+            "Daily 17:00 IST (MH only) — fill Tasgaon plant capacity "
+            "with Grade A grape supply before external traders."
+        ),
+    },
+    {
+        "id": "WEEKLY_AGGREGATION",
+        "func": "pipelines.scheduler:_job_weekly_aggregation",
+        "trigger": "cron",
+        "trigger_kwargs": {"day_of_week": "sun", "hour": 23, "minute": 0},
+        "description": (
+            "Sunday 23:00 IST — group small farmer lots into tradeable "
+            "aggregated lots for the next 3 harvest weeks."
+        ),
+    },
+    {
+        "id": "LOT_EXPIRY_CLEANUP",
+        "func": "pipelines.scheduler:_job_lot_expiry_cleanup",
+        "trigger": "cron",
+        "trigger_kwargs": {"hour": 2, "minute": 0},
+        "description": (
+            "Daily 02:00 IST — mark expired farmer_lots and "
+            "trader_requirements rows as EXPIRED."
+        ),
+    },
+    {
+        "id": "TRADE_CONFIRMATION_FOLLOWUP",
+        "func": "pipelines.scheduler:_job_trade_confirmation_followup",
+        "trigger": "cron",
+        "trigger_kwargs": {"hour": 10, "minute": 0},
+        "description": (
+            "Daily 10:00 IST — send WhatsApp confirmation requests to "
+            "farmer + trader for connections 7 days old and unconfirmed."
+        ),
+    },
 ]
 
 
@@ -395,6 +460,53 @@ def _job_pre_season() -> None:
             logger.warning("PRE_SEASON failed for %s: %s", commodity, exc)
 
 
+#: JH pre-season commodity list (each entry maps a Jharkhand mango variety to
+#: its main belt region). The cron fires on the first Monday of February so
+#: traders see the JH harvest forecast 8-12 weeks before the April-May start.
+PRE_SEASON_JH_COMMODITIES: tuple[tuple[str, str], ...] = (
+    ("Mango Mallika", "Jharkhand (Godda/Deoghar/Dumka)"),
+    ("Mango Amrapali", "Jharkhand (Ranchi/Hazaribagh)"),
+    ("Mango Jardalu", "Jharkhand/Bihar (Bhagalpur GI belt)"),
+    ("Mango Himsagar", "Jharkhand/West Bengal (Sahebganj/Malda)"),
+    ("Mango Langra_JH", "Jharkhand (Godda/Dumka/Deoghar)"),
+)
+
+
+def _job_pre_season_jh() -> None:
+    """Generate the Jharkhand pre-season forecast on the first Monday of
+    February. Same engine as ``_job_pre_season``; only the timing + commodity
+    scope differ (April-May harvest start in JH vs March-April in MH)."""
+
+    logger.info("scheduler: PRE_SEASON_JH job fired")
+    try:
+        from pipelines.report_generator import generate_pre_season_content
+        try:
+            from api import trader_whatsapp  # noqa: F401
+        except Exception:  # noqa: BLE001
+            trader_whatsapp = None  # type: ignore[assignment]
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("PRE_SEASON_JH: import failed (%s)", exc)
+        return
+
+    for commodity, region in PRE_SEASON_JH_COMMODITIES:
+        try:
+            content = generate_pre_season_content(
+                commodity=commodity,
+                region=region,
+                bearing_year="ON",
+                belt_ndvi=0.58,
+                vs_3yr_avg=6.0,
+                expected_volume_mt=8500,
+                peak_week="May Week 2",
+            )
+            if trader_whatsapp is not None:
+                send_fn = getattr(trader_whatsapp, "send_pre_season", None)
+                if callable(send_fn):
+                    send_fn(commodity=commodity, content=content)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("PRE_SEASON_JH failed for %s: %s", commodity, exc)
+
+
 # --------------------------------------------------------------------------- #
 # Scheduler builder
 # --------------------------------------------------------------------------- #
@@ -453,15 +565,136 @@ def build_scheduler(timezone: str = "Asia/Kolkata") -> Any:
     return scheduler
 
 
+# --------------------------------------------------------------------------- #
+# Bagaan Sathi marketplace job callables (SDD §9)
+# --------------------------------------------------------------------------- #
+
+
+def _job_daily_matching() -> None:
+    logger.info("scheduler: DAILY_MATCHING job fired")
+    try:
+        from pipelines.matching_engine import run_daily_matching
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("DAILY_MATCHING: import failed (%s)", exc)
+        return
+    try:
+        summary = run_daily_matching()
+        logger.info("DAILY_MATCHING summary: %s", summary)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("DAILY_MATCHING run failed: %s", exc)
+
+
+def _job_plant_priority_queue() -> None:
+    logger.info("scheduler: PLANT_PRIORITY_QUEUE job fired")
+    try:
+        from pipelines.plant_supply_queue import run_plant_priority_queue
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("PLANT_PRIORITY_QUEUE: import failed (%s)", exc)
+        return
+    try:
+        summary = run_plant_priority_queue()
+        logger.info("PLANT_PRIORITY_QUEUE summary: %s", summary)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("PLANT_PRIORITY_QUEUE run failed: %s", exc)
+
+
+def _job_weekly_aggregation() -> None:
+    logger.info("scheduler: WEEKLY_AGGREGATION job fired")
+    try:
+        from pipelines.lot_aggregator import run_weekly_aggregation
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("WEEKLY_AGGREGATION: import failed (%s)", exc)
+        return
+    try:
+        summary = run_weekly_aggregation()
+        logger.info(
+            "WEEKLY_AGGREGATION created %d aggregations",
+            summary.get("aggregations_created", 0),
+        )
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("WEEKLY_AGGREGATION run failed: %s", exc)
+
+
+def _job_lot_expiry_cleanup() -> None:
+    """Mark expired farmer_lots and trader_requirements as EXPIRED."""
+    logger.info("scheduler: LOT_EXPIRY_CLEANUP job fired")
+    try:
+        from api import whatsapp_db
+        from datetime import datetime as _dt, timezone as _tz
+
+        now = _dt.now(_tz.utc).isoformat()
+        with whatsapp_db._connect() as conn:  # noqa: SLF001
+            if whatsapp_db._table_exists(conn, "farmer_lots"):  # noqa: SLF001
+                conn.execute(
+                    "UPDATE farmer_lots SET status = 'EXPIRED' "
+                    "WHERE expires_at IS NOT NULL AND expires_at < ? "
+                    "AND status IN ('AVAILABLE','PARTIALLY_MATCHED','MATCHED')",
+                    (now,),
+                )
+            if whatsapp_db._table_exists(conn, "trader_requirements"):  # noqa: SLF001
+                conn.execute(
+                    "UPDATE trader_requirements SET status = 'EXPIRED' "
+                    "WHERE expires_at IS NOT NULL AND expires_at < ? "
+                    "AND status = 'ACTIVE'",
+                    (now,),
+                )
+            conn.commit()
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("LOT_EXPIRY_CLEANUP failed: %s", exc)
+
+
+def _job_trade_confirmation_followup() -> None:
+    """Send confirmation WhatsApp to farmer + trader for trades that are
+    7 days old and unconfirmed (SDD §4.7)."""
+    logger.info("scheduler: TRADE_CONFIRMATION_FOLLOWUP job fired")
+    try:
+        from api import whatsapp_db
+        from datetime import datetime as _dt, timedelta as _td, timezone as _tz
+
+        cutoff = (_dt.now(_tz.utc) - _td(days=7)).isoformat()
+        with whatsapp_db._connect() as conn:  # noqa: SLF001
+            if not whatsapp_db._table_exists(conn, "lot_matches"):  # noqa: SLF001
+                return
+            cur = conn.execute(
+                "SELECT id, farmer_id, trader_id FROM lot_matches "
+                "WHERE connection_made = 1 AND connection_made_at <= ? "
+                "AND id NOT IN (SELECT match_id FROM farmer_trades "
+                "WHERE match_id IS NOT NULL)",
+                (cutoff,),
+            )
+            matches = [dict(row) for row in cur.fetchall()] if hasattr(cur, "fetchall") else []
+
+        try:
+            from api import marketplace_whatsapp
+
+            send_req = getattr(
+                marketplace_whatsapp, "send_trade_confirmation_request", None
+            )
+            for m in matches:
+                if callable(send_req):
+                    send_req(match_id=m.get("id"))
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("trade confirmation dispatch skipped: %s", exc)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("TRADE_CONFIRMATION_FOLLOWUP failed: %s", exc)
+
+
 __all__ = [
     "JOB_DEFINITIONS",
+    "PRE_SEASON_JH_COMMODITIES",
     "build_scheduler",
     "_job_weekly_report",
     "_job_daily_update",
     "_job_flash_check",
     "_job_pre_season",
+    "_job_pre_season_jh",
     "_job_keepalive_ping",
     "_job_weekly_new_data_retrain",
     "_job_monthly_mape_drift_check",
     "_job_annual_full_retrain",
+    "_job_daily_matching",
+    "_job_plant_priority_queue",
+    "_job_weekly_aggregation",
+    "_job_lot_expiry_cleanup",
+    "_job_trade_confirmation_followup",
 ]

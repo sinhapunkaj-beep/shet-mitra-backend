@@ -13,6 +13,18 @@ class Farmer {
   final double? centroidLng;
   final String? amedCropDetected;
   final bool amedVarietyCollected;
+  final String regionCode;
+
+  /// True when the GI verifier has confirmed this farmer's primary
+  /// plot qualifies for the Jardalu GI premium (SDD §3.3). Populated
+  /// by the backend via `farm_plots.gi_verified` after the AMED
+  /// pipeline runs.
+  final bool giVerified;
+
+  /// Latest mandi reference price (Rs/kg) for this farmer's crop.
+  /// Surfaced so the farm card can show the projected GI premium
+  /// without an extra backend call.
+  final double? referenceMandiPrice;
 
   const Farmer({
     required this.id,
@@ -27,6 +39,9 @@ class Farmer {
     this.centroidLng,
     this.amedCropDetected,
     this.amedVarietyCollected = false,
+    this.regionCode = 'MH',
+    this.giVerified = false,
+    this.referenceMandiPrice,
   });
 
   factory Farmer.fromJson(Map<String, dynamic> json) => Farmer(
@@ -44,6 +59,11 @@ class Farmer {
         amedVarietyCollected:
             json['amed_variety_collected'] == true ||
                 json['amed_variety_collected'] == 'true',
+        regionCode: (json['region_code'] ?? 'MH').toString(),
+        giVerified: json['gi_verified'] == true ||
+            json['gi_verified'] == 'true',
+        referenceMandiPrice:
+            _toDouble(json['reference_mandi_price']),
       );
 
   Map<String, dynamic> toJson() => <String, dynamic>{
@@ -59,6 +79,9 @@ class Farmer {
         'centroid_lng': centroidLng,
         'amed_crop_detected': amedCropDetected,
         'amed_variety_collected': amedVarietyCollected,
+        'region_code': regionCode,
+        'gi_verified': giVerified,
+        'reference_mandi_price': referenceMandiPrice,
       };
 
   static double? _toDouble(dynamic v) {

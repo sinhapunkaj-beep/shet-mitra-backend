@@ -136,6 +136,64 @@
                 </Grid>
             </Border>
 
+            <!-- Marketplace stat cards (Bagaan Sathi SDD §7) -->
+            <TextBlock Text="Marketplace (Bagaan Sathi)"
+                       FontSize="18"
+                       FontWeight="SemiBold"
+                       Margin="8,24,0,8" />
+
+            <UniformGrid Columns="3" Rows="2">
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="Active Lots" Style="{StaticResource CardTitle}" />
+                        <TextBlock Text="{Binding MarketplaceStats.ActiveLotsCount}"
+                                   Style="{StaticResource CardValue}" />
+                        <TextBlock Foreground="{StaticResource TextMuted}"
+                                   FontSize="12">
+                            <Run Text="{Binding MarketplaceStats.ActiveLotsTotalKg, StringFormat={}{0:N0}}" />
+                            <Run Text=" kg total" />
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="Active Requirements" Style="{StaticResource CardTitle}" />
+                        <TextBlock Text="{Binding MarketplaceStats.ActiveRequirementsCount}"
+                                   Style="{StaticResource CardValue}" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="Matches This Week" Style="{StaticResource CardTitle}" />
+                        <TextBlock Text="{Binding MarketplaceStats.MatchesThisWeek}"
+                                   Style="{StaticResource CardValue}" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="Trades Completed" Style="{StaticResource CardTitle}" />
+                        <TextBlock Text="{Binding MarketplaceStats.TradesCompleted}"
+                                   Style="{StaticResource CardValue}" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="Avg Premium Achieved" Style="{StaticResource CardTitle}" />
+                        <TextBlock Text="{Binding MarketplaceStats.AvgPremiumPct, StringFormat={}{0:0.0}%}"
+                                   Style="{StaticResource CardValue}" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="Platform Fees This Month" Style="{StaticResource CardTitle}" />
+                        <TextBlock Style="{StaticResource CardValue}">
+                            <Run Text="₹" />
+                            <Run Text="{Binding MarketplaceStats.PlatformFeesThisMonthInr, StringFormat={}{0:N0}}" />
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+            </UniformGrid>
+
             <TextBlock Text="Belt Intelligence"
                        FontSize="18"
                        FontWeight="SemiBold"

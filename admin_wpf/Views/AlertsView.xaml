@@ -20,11 +20,24 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0"
-                   Text="Alerts"
-                   FontSize="26"
-                   FontWeight="Bold"
-                   Margin="8,8,0,16" />
+        <DockPanel Grid.Row="0" LastChildFill="False" Margin="8,8,0,16">
+            <TextBlock DockPanel.Dock="Left"
+                       Text="Alerts"
+                       FontSize="26"
+                       FontWeight="Bold" />
+            <ComboBox DockPanel.Dock="Right"
+                      ItemsSource="{Binding TopRegionFilterOptions}"
+                      SelectedItem="{Binding TopRegionFilter, Mode=TwoWay}"
+                      MinWidth="200"
+                      Margin="0,0,16,0"
+                      Padding="6,4"
+                      VerticalAlignment="Center" />
+            <TextBlock DockPanel.Dock="Right"
+                       Text="Region:"
+                       Foreground="{StaticResource TextMuted}"
+                       VerticalAlignment="Center"
+                       Margin="0,0,6,0" />
+        </DockPanel>
 
         <TabControl Grid.Row="1"
                     SelectedIndex="{Binding SelectedTabIndex}"

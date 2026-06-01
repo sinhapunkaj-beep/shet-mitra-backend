@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 
 import '../config.dart';
 import '../state/auth_state.dart';
 import '../utils/i18n.dart';
+import '../utils/region_helper.dart';
 import '../widgets/language_selector.dart';
+import '../widgets/region_selector.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -21,6 +24,24 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _busy = false;
   String? _error;
   String _locale = AppConfig.defaultLocale;
+  String _regionCode = RegionHelper.regionMH;
+  String? _gpsSuggestion;
+  bool _agentTouchedRegion = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Seed region from any previously-persisted choice, then kick off GPS.
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      final AuthState auth = context.read<AuthState>();
+      setState(() {
+        _regionCode = auth.activeRegionCode;
+        _locale = RegionHelper.defaultLocaleForRegionCode(_regionCode);
+      });
+      await _autoDetectRegion();
+    });
+  }
 
   @override
   void dispose() {
@@ -29,12 +50,57 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  Future<void> _autoDetectRegion() async {
+    try {
+      final bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) return;
+      LocationPermission perm = await Geolocator.checkPermission();
+      if (perm == LocationPermission.denied) {
+        perm = await Geolocator.requestPermission();
+      }
+      if (perm == LocationPermission.deniedForever ||
+          perm == LocationPermission.denied) {
+        return;
+      }
+      final Position pos = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.medium,
+      );
+      final String? suggested =
+          RegionHelper.suggestTopLevelRegion(pos.latitude, pos.longitude);
+      if (!mounted || suggested == null) return;
+      setState(() {
+        _gpsSuggestion = suggested;
+        // Only auto-pick if the agent has not manually changed yet.
+        if (!_agentTouchedRegion) {
+          _regionCode = suggested;
+          _locale = RegionHelper.defaultLocaleForRegionCode(_regionCode);
+        }
+      });
+    } catch (_) {
+      // Silent — region remains default and agent can pick manually.
+    }
+  }
+
+  Future<void> _onRegionChanged(String code) async {
+    setState(() {
+      _agentTouchedRegion = true;
+      _regionCode = code;
+      _locale = RegionHelper.defaultLocaleForRegionCode(code);
+    });
+    await context.read<AuthState>().setRegionCode(code);
+  }
+
   Future<void> _sendOtp() async {
     setState(() {
       _busy = true;
       _error = null;
     });
+    // Capture the AuthState ref up front so we don't reach for
+    // `context` after an `await` (linter: use_build_context_synchronously).
     final AuthState auth = context.read<AuthState>();
+    // Persist the region choice on the auth state so the agent's
+    // profile carries it through verifyOtp.
+    await auth.setRegionCode(_regionCode);
     final bool ok = await auth.sendOtp(_mobileCtrl.text.trim());
     if (!mounted) return;
     setState(() {
@@ -62,9 +128,20 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final String brand = RegionHelper.brandForRegionCode(_regionCode);
     return Scaffold(
       appBar: AppBar(
-        title: Text(I18n.t('app_title', _locale)),
+        title: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(brand, style: const TextStyle(fontWeight: FontWeight.w700)),
+            Text(
+              I18n.t('app_subtitle', _locale),
+              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w400),
+            ),
+          ],
+        ),
         actions: <Widget>[
           Padding(
             padding: const EdgeInsets.only(right: 12),
@@ -78,18 +155,25 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ],
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            const SizedBox(height: 24),
+            const SizedBox(height: 12),
             Text(
               I18n.t('greeting', _locale),
               style: Theme.of(context).textTheme.headlineMedium,
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 24),
+            RegionSelector(
+              value: _regionCode,
+              gpsSuggestion: _gpsSuggestion,
+              locale: _locale,
+              onChanged: _onRegionChanged,
+            ),
+            const SizedBox(height: 24),
             TextField(
               controller: _mobileCtrl,
               keyboardType: TextInputType.phone,
@@ -137,7 +221,8 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Padding(
                 padding: EdgeInsets.all(12),
                 child: Text(
-                  'Demo: enter any 10-digit mobile, then OTP 123456 to log in as Tasgaon agent.',
+                  'Demo: enter any 10-digit mobile, then OTP 123456. '
+                  'Pick MH for ShetMitra (Marathi) or JH for Bagaan Sathi (Hindi).',
                   style: TextStyle(fontStyle: FontStyle.italic, fontSize: 12),
                 ),
               ),

@@ -271,3 +271,172 @@ def reset_sender() -> None:
     with _sender_lock:
         _current_sender = None
         _missing_key_warned = False
+
+
+# --------------------------------------------------------------------------- #
+# Region-aware sender name + footer (SDD §2.3)
+# --------------------------------------------------------------------------- #
+
+#: Default sender + region code applied when no region row is found.
+DEFAULT_SENDER_NAME = "ShetMitra"
+DEFAULT_REGION_CODE = "MH"
+
+#: Static safety-net so unit tests / offline environments still resolve a
+#: sensible sender name even when the regions table is missing.
+_REGION_FALLBACK_SENDERS: dict[str, str] = {
+    "MH": "ShetMitra",
+    "JH": "Bagaan Sathi",
+}
+
+# Small in-memory caches so we never hit SQLite twice for the same farmer
+# within a process lifetime. The values are immutable strings so a plain
+# dict guarded by a lock is enough.
+_FARMER_REGION_CACHE: dict[str, str] = {}
+_REGION_SENDER_CACHE: dict[str, str] = {}
+_REGION_CACHE_LOCK = threading.Lock()
+
+
+def reset_region_cache() -> None:
+    """Test hook: drop cached farmer→region and region→sender entries."""
+    with _REGION_CACHE_LOCK:
+        _FARMER_REGION_CACHE.clear()
+        _REGION_SENDER_CACHE.clear()
+
+
+def _lookup_region_code_for_farmer(farmer_id: str) -> Optional[str]:
+    """Resolve ``farmer_id`` → ``region_code`` via ``api.whatsapp_db``.
+
+    Returns ``None`` on any error (missing table, missing farmer, missing
+    column) so callers can apply the default. We never raise — sender
+    resolution must not crash the message-send path.
+    """
+    try:
+        # Local import keeps this module importable in environments where
+        # SQLite or the mirror DB isn't available (e.g. some CI runs).
+        from api import whatsapp_db  # type: ignore
+    except Exception as exc:  # noqa: BLE001
+        LOG.debug("region lookup: whatsapp_db import failed: %s", exc)
+        return None
+    try:
+        farmer = whatsapp_db.get_farmer_by_id(farmer_id)
+    except Exception as exc:  # noqa: BLE001
+        LOG.debug("region lookup: get_farmer_by_id(%s) failed: %s", farmer_id, exc)
+        return None
+    if not isinstance(farmer, dict):
+        return None
+    code = farmer.get("region_code")
+    if isinstance(code, str) and code.strip():
+        return code.strip().upper()
+    return None
+
+
+def _lookup_sender_for_region(region_code: str) -> Optional[str]:
+    """Resolve ``region_code`` → ``whatsapp_sender_name`` from ``regions``.
+
+    Falls back to a small static table when the regions table is absent
+    on the local SQLite mirror. Returns ``None`` only when both the DB
+    and the static fallback have no entry for ``region_code``.
+    """
+    try:
+        from api import whatsapp_db  # type: ignore
+    except Exception as exc:  # noqa: BLE001
+        LOG.debug("sender lookup: whatsapp_db import failed: %s", exc)
+        return _REGION_FALLBACK_SENDERS.get(region_code)
+
+    try:
+        with whatsapp_db._connect() as conn:  # noqa: SLF001 - reuse helper
+            if not whatsapp_db._table_exists(conn, "regions"):  # noqa: SLF001
+                return _REGION_FALLBACK_SENDERS.get(region_code)
+            cur = conn.execute(
+                "SELECT whatsapp_sender_name FROM regions "
+                "WHERE region_code = ? LIMIT 1",
+                (region_code,),
+            )
+            row = cur.fetchone()
+    except Exception as exc:  # noqa: BLE001
+        LOG.debug("sender lookup: query failed for %s: %s", region_code, exc)
+        return _REGION_FALLBACK_SENDERS.get(region_code)
+
+    if row is None:
+        return _REGION_FALLBACK_SENDERS.get(region_code)
+    try:
+        name = row["whatsapp_sender_name"]
+    except (KeyError, IndexError, TypeError):
+        name = None
+    if isinstance(name, str) and name.strip():
+        return name.strip()
+    return _REGION_FALLBACK_SENDERS.get(region_code)
+
+
+def get_sender_name(farmer_id: Optional[str]) -> str:
+    """Return the WhatsApp sender name for ``farmer_id``'s region.
+
+    Resolution order:
+      1. ``_FARMER_REGION_CACHE`` → ``_REGION_SENDER_CACHE`` (in-memory).
+      2. ``farmers.region_code`` via ``whatsapp_db.get_farmer_by_id``.
+      3. ``regions.whatsapp_sender_name`` for that region code.
+      4. Static fallback ``MH`` → ``"ShetMitra"`` / ``JH`` → ``"Bagaan Sathi"``.
+      5. :data:`DEFAULT_SENDER_NAME` (``"ShetMitra"``).
+
+    Never raises — any error path collapses to the default sender so a
+    transient DB hiccup cannot block a WhatsApp send.
+    """
+    if not farmer_id:
+        return DEFAULT_SENDER_NAME
+
+    with _REGION_CACHE_LOCK:
+        region_code = _FARMER_REGION_CACHE.get(farmer_id)
+        if region_code is not None:
+            cached_sender = _REGION_SENDER_CACHE.get(region_code)
+            if cached_sender is not None:
+                return cached_sender
+
+    if region_code is None:
+        region_code = _lookup_region_code_for_farmer(farmer_id) or DEFAULT_REGION_CODE
+        with _REGION_CACHE_LOCK:
+            _FARMER_REGION_CACHE[farmer_id] = region_code
+
+    with _REGION_CACHE_LOCK:
+        cached_sender = _REGION_SENDER_CACHE.get(region_code)
+    if cached_sender is not None:
+        return cached_sender
+
+    sender = _lookup_sender_for_region(region_code) or DEFAULT_SENDER_NAME
+    with _REGION_CACHE_LOCK:
+        _REGION_SENDER_CACHE[region_code] = sender
+    return sender
+
+
+def get_region_code(farmer_id: Optional[str]) -> str:
+    """Return the region_code (e.g. ``'MH'``/``'JH'``) for ``farmer_id``.
+
+    Uses the same cache as :func:`get_sender_name`. Defaults to ``'MH'``
+    when the lookup fails.
+    """
+    if not farmer_id:
+        return DEFAULT_REGION_CODE
+    with _REGION_CACHE_LOCK:
+        cached = _FARMER_REGION_CACHE.get(farmer_id)
+    if cached is not None:
+        return cached
+    region_code = _lookup_region_code_for_farmer(farmer_id) or DEFAULT_REGION_CODE
+    with _REGION_CACHE_LOCK:
+        _FARMER_REGION_CACHE[farmer_id] = region_code
+    return region_code
+
+
+def get_report_footer(farmer_id: Optional[str]) -> str:
+    """Return the SDD §2.3 region-aware footer.
+
+    ::
+
+        — {sender}
+           Sahyadri Krushi Intelligence
+
+    Used by all daily reports, advisory messages, booking confirmations
+    and market alerts. Trader-facing messages call this with the
+    trader's ``farmer_id`` (or ``None`` to force the ``ShetMitra``
+    default).
+    """
+    sender = get_sender_name(farmer_id)
+    return f"— {sender}\n   Sahyadri Krushi Intelligence"

@@ -1172,6 +1172,31 @@ def generate_mango_advisory(
 # Crop-aware dispatcher
 # --------------------------------------------------------------------------- #
 
+#: Jharkhand mango varieties served by the Bagaan Sathi region build.
+JH_MANGO_VARIETIES = (
+    "Mallika", "Amrapali", "Jardalu", "Himsagar", "Langra_JH",
+)
+
+
+def _resolve_region_code(plot, amed, variety_config) -> str | None:
+    """Return the resolved region_code for a plot/amed/variety triplet.
+
+    Resolution order:
+      1. plot.region_code
+      2. amed.region_code
+      3. variety_config.region_code (set on JH varieties in
+         data/variety_config.json — Agent 2)
+    """
+    plot = plot or {}
+    amed = amed or {}
+    variety_config = variety_config or {}
+    return (
+        plot.get("region_code")
+        or amed.get("region_code")
+        or variety_config.get("region_code")
+    )
+
+
 def generate_advisory_for_plot(
     plot,
     amed,
@@ -1186,8 +1211,19 @@ def generate_advisory_for_plot(
 ):
     """Route to the correct crop-specific advisory builder.
 
-    - Mango -> ``generate_mango_advisory``
-    - Grapes / Pomegranate / other -> ``generate_advisory``
+    - Mango (JH region or JH variety) -> ``generate_mango_advisory`` with
+      Hindi language_hint forced via ``pipelines.i18n.language_for_region``
+      and the variety-specific spray schedule + harvest window from
+      ``data/variety_config.json``.
+    - Mango (Maharashtra / other) -> ``generate_mango_advisory`` unchanged.
+    - Grapes / Pomegranate / other -> ``generate_advisory``.
+
+    The JH branch is purely additive: it does not refactor the existing
+    Maharashtra advisory path. It only:
+      * Forces the language_hint to Hindi (so the Claude prompt asks for a
+        Hindi response).
+      * Surfaces the JH region code on the response so downstream
+        WhatsApp dispatchers can pick the right sender.
     """
     plot = plot or {}
     crop = plot.get("current_crop") or (amed or {}).get("crop_type")
@@ -1196,6 +1232,45 @@ def generate_advisory_for_plot(
         variety = plot.get("current_crop_variety")
         variety_config = get_variety_config(crop, variety, config_path=config_path)
         price_pred = (market_data or {}).get("price_pred") or {}
+
+        region_code = _resolve_region_code(plot, amed, variety_config)
+        # Treat any JH-mapped variety as JH even if the plot didn't carry the
+        # region code (defensive: pipelines that don't normalise region yet).
+        if variety in JH_MANGO_VARIETIES and not region_code:
+            region_code = "JH"
+
+        if region_code == "JH":
+            # Lazy-import to keep this module decoupled from i18n in tests
+            # that stub the whole module.
+            try:
+                from pipelines import i18n as _i18n
+                language_hint = _i18n.language_for_region("JH")
+            except Exception:  # noqa: BLE001
+                language_hint = "Hindi"
+            # Variety_config is a fresh dict (get_variety_config returns a
+            # shallow copy), so we can override the language hint without
+            # poisoning the module-level cache.
+            variety_config = dict(variety_config)
+            variety_config["language_hint"] = language_hint
+            variety_config.setdefault("region_code", "JH")
+            result = generate_mango_advisory(
+                plot=plot,
+                amed=amed,
+                sentinel=sentinel,
+                weather=weather,
+                phenology=phenology,
+                variety_config=variety_config,
+                price_pred=price_pred,
+                market=market_data,
+                llm_client=llm_client,
+                reference_date=reference_date,
+            )
+            # Surface the routing decision on the result so the WhatsApp
+            # dispatcher knows which sender to use.
+            result["region_code"] = "JH"
+            result["language"] = language_hint
+            return result
+
         return generate_mango_advisory(
             plot=plot,
             amed=amed,
@@ -1225,6 +1300,7 @@ def generate_advisory_for_plot(
 
 __all__ = [
     "GLOBAL_FALLBACK_VARIETY_CONFIG",
+    "JH_MANGO_VARIETIES",
     "build_claude_prompt",
     "build_mango_claude_prompt",
     "calculate_revenue_potential",

@@ -45,6 +45,8 @@ public partial class AlertsViewModel : ObservableObject
     public ObservableCollection<string> AvailableRegionFilters { get; } = new()
     {
         "All",
+        "Maharashtra (ShetMitra)",
+        "Jharkhand (Bagaan Sathi)",
         "Konkan",
         "Marathwada",
         "Vidarbha",
@@ -53,6 +55,19 @@ public partial class AlertsViewModel : ObservableObject
 
     [ObservableProperty] private string selectedCropFilter = "All";
     [ObservableProperty] private string selectedRegionFilter = "All";
+
+    // Top-of-screen region filter (Bagaan Sathi SDD §7) — All /
+    // Maharashtra (ShetMitra) / Jharkhand (Bagaan Sathi). Independent of
+    // the variety-tab region drilldown above so the two filters don't
+    // collide.
+    public ObservableCollection<string> TopRegionFilterOptions { get; } = new()
+    {
+        "All",
+        "Maharashtra (ShetMitra)",
+        "Jharkhand (Bagaan Sathi)"
+    };
+
+    [ObservableProperty] private string topRegionFilter = "All";
 
     public ObservableCollection<VarietyQueueRow> FilteredVarietyQueue { get; } = new();
 

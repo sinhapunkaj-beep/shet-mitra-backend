@@ -19,6 +19,14 @@ public partial class FarmerDetailViewModel : ObservableObject
     [ObservableProperty] private double registeredFieldSize;
     [ObservableProperty] private string registeredCrop = "";
 
+    // Region badge (Bagaan Sathi SDD §7) — "MH" (ShetMitra) / "JH" (Bagaan
+    // Sathi). Derived from <see cref="CropRegion"/> / <see cref="Village"/>
+    // until the farmers.region column is wired through the API.
+    [ObservableProperty] private string farmerRegion = "MH";
+
+    public bool IsJharkhandFarmer => string.Equals(FarmerRegion, "JH", StringComparison.OrdinalIgnoreCase);
+    public bool IsMaharashtraFarmer => !IsJharkhandFarmer;
+
     // AMED Intelligence section (SDD §7 Agent 6 Change 1)
     [ObservableProperty] private string? amedCropType;
     [ObservableProperty] private double amedConfidence;
@@ -227,6 +235,12 @@ public partial class FarmerDetailViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(IsAreaMismatch));
         OnPropertyChanged(nameof(IsAnyMismatch));
+    }
+
+    partial void OnFarmerRegionChanged(string value)
+    {
+        OnPropertyChanged(nameof(IsJharkhandFarmer));
+        OnPropertyChanged(nameof(IsMaharashtraFarmer));
     }
 
     partial void OnCropMismatchChanged(bool value)

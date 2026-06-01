@@ -40,10 +40,17 @@ _LANGUAGE_FILES: dict[str, str] = {
     "marathi": "marathi.json",
     "english": "english.json",
     "konkani": "konkani.json",
+    "hindi": "hindi.json",
 }
 
 #: Language used when an unknown language is requested or a key is missing.
 DEFAULT_LANGUAGE = "Marathi"
+
+#: Per-region default language (SDD §5).
+_REGION_DEFAULT_LANGUAGE: dict[str, str] = {
+    "MH": "Marathi",
+    "JH": "Hindi",
+}
 
 # SDD §6.2 Konkan bounding box.
 _KONKAN_LAT_MIN = 15.5
@@ -217,10 +224,24 @@ def suggest_language_from_centroid(
     return DEFAULT_LANGUAGE
 
 
+def language_for_region(region_code: str | None) -> str:
+    """Return the default language for a region code (SDD §5).
+
+    ``'JH'`` → Hindi, ``'MH'`` → Marathi, anything else → :data:`DEFAULT_LANGUAGE`.
+    Case-insensitive on the input. Never raises.
+    """
+    if not region_code:
+        return DEFAULT_LANGUAGE
+    return _REGION_DEFAULT_LANGUAGE.get(
+        str(region_code).strip().upper(), DEFAULT_LANGUAGE
+    )
+
+
 __all__ = [
     "DEFAULT_LANGUAGE",
     "load_translations",
     "get_message",
     "detect_konkan_region",
     "suggest_language_from_centroid",
+    "language_for_region",
 ]

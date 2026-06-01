@@ -7,6 +7,7 @@ import '../state/agent_state.dart';
 import '../state/auth_state.dart';
 import '../utils/i18n.dart';
 import '../widgets/crop_chip.dart';
+import '../widgets/gi_badge.dart';
 
 class FarmersListScreen extends StatefulWidget {
   const FarmersListScreen({super.key, required this.locale});
@@ -81,9 +82,23 @@ class _FarmersListScreenState extends State<FarmersListScreen> {
                     itemBuilder: (BuildContext ctx, int i) {
                       final Farmer f = filtered[i];
                       return ListTile(
-                        title: Text(
-                          f.fullName,
-                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        title: Row(
+                          children: <Widget>[
+                            Expanded(
+                              child: Text(
+                                f.fullName,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                            if (f.giVerified) ...<Widget>[
+                              const SizedBox(width: 6),
+                              JardaluGiBadge(
+                                locale: widget.locale,
+                                referenceMandiPrice: f.referenceMandiPrice,
+                              ),
+                            ],
+                          ],
                         ),
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
