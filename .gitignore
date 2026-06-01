@@ -7,6 +7,13 @@ shet_mitra/.env.*
 *.key
 nano.env
 
+# --- Local build artifacts (machine-specific) -------------------------------
+# Stray cert dumps from csplit / openssl-style cert manipulation
+xx[0-9][0-9]
+# Local Java truststore for corp-AV HTTPS interception
+shetmitra_agent/android/mycacerts
+shetmitra_agent/android/gradle.properties.local
+
 # --- Python build artifacts -------------------------------------------------
 __pycache__/
 *.py[cod]
